@@ -53,3 +53,7 @@ coverage.html
 
 # Docker override/local
 docker-compose.override.yml
+# RSA / JWT keys
+openSSL/
+openSSL/
+*.pem

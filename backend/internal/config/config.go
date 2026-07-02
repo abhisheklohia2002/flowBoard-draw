@@ -19,6 +19,7 @@ type Config struct {
 	DBName     string
 	DBSSLMode  string
 	DBTimeZone string
+	JWTKid     string
 }
 
 func LoadEnv() Config {
@@ -60,5 +61,6 @@ func LoadEnv() Config {
 		DBName:     helpers.GetEnv("DB_NAME", "flowforge"),
 		DBSSLMode:  helpers.GetEnv("DB_SSLMODE", "disable"),
 		DBTimeZone: helpers.GetEnv("DB_TIMEZONE", "Asia/Kolkata"),
+		JWTKid:     helpers.GetEnv("JWT_KID", "********"),
 	}
 }
