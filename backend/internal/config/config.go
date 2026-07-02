@@ -1,12 +1,27 @@
 package config
+
 import (
+	"flowBoard/draw/internal/helpers"
 	"log"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
-func LoadEnv() {
+type Config struct {
+	AppEnv string
+	Port   string
+
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
+	DBSSLMode  string
+	DBTimeZone string
+}
+
+func LoadEnv() Config {
 	appEnv := os.Getenv("APP_ENV")
 
 	envFile := ".env"
@@ -25,8 +40,25 @@ func LoadEnv() {
 	err := godotenv.Load(envFile)
 	if err != nil {
 		log.Printf("No %s file found, using system environment variables", envFile)
-		return
+		return Config{}
 	}
 
 	log.Printf("Loaded environment file: %s", envFile)
+
+	if err := godotenv.Load(envFile); err != nil {
+		log.Printf("No %s file found, using system env", envFile)
+	}
+
+	return Config{
+		AppEnv: helpers.GetEnv("APP_ENV", "development"),
+		Port:   helpers.GetEnv("PORT", "8080"),
+
+		DBHost:     helpers.GetEnv("DB_HOST", "localhost"),
+		DBPort:     helpers.GetEnv("DB_PORT", "5432"),
+		DBUser:     helpers.GetEnv("DB_USERNAME", "postgres"),
+		DBPassword: helpers.GetEnv("DB_PASSWORD", "postgres"),
+		DBName:     helpers.GetEnv("DB_NAME", "flowforge"),
+		DBSSLMode:  helpers.GetEnv("DB_SSLMODE", "disable"),
+		DBTimeZone: helpers.GetEnv("DB_TIMEZONE", "Asia/Kolkata"),
+	}
 }
