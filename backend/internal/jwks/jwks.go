@@ -1,6 +1,5 @@
 package jwks
 
-
 import (
 	"crypto/rsa"
 	"crypto/x509"

@@ -4,8 +4,8 @@ import (
 	diagramHandler "flowBoard/draw/internal/handlers/diagram"
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
-
 	"github.com/gin-gonic/gin"
+	middleware "flowBoard/draw/internal/middleware"
 )
 
 func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHandler projectHandler.ProjectHandler,
@@ -17,20 +17,21 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 		{
 			user.POST("register", userhandler.Register)
 		}
-
-		projects := api.Group("/projects")
+		protected := api.Group("")
+		protected.Use(middleware.AuthMiddleware())
+		projects := protected.Group("/projects")
 		{
 			projects.POST("", projectHandler.CreateProject)
 			projects.GET("", projectHandler.GetProject)
 		}
 
-		projectDiagrams := api.Group("/projects/:projectID/diagrams")
+		projectDiagrams := protected.Group("/projects/:projectID/diagrams")
 		{
 			projectDiagrams.POST("", diagramHandler.CreateDiagram)
 			projectDiagrams.GET("", diagramHandler.GetProjectDiagrams)
 		}
 
-		diagrams := api.Group("/diagrams")
+		diagrams := protected.Group("/diagrams")
 		{
 			diagrams.GET("/:diagramID", diagramHandler.GetDiagram)
 			diagrams.PUT("/:diagramID", diagramHandler.UpdateDiagram)

@@ -33,7 +33,20 @@ func (h *ProjectHandlerImpl) CreateProject(c *gin.Context) {
 		return
 	}
 
-	userID := uint(1)
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "user not found in context",
+		})
+		return
+	}
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "invalid user id in context",
+		})
+		return
+	}
 
 	project, err := h.service.CreateProject(userID, req)
 	if err != nil {
@@ -51,7 +64,20 @@ func (h *ProjectHandlerImpl) CreateProject(c *gin.Context) {
 }
 
 func (h *ProjectHandlerImpl) GetProject(c *gin.Context) {
-	userID := uint(1)
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "user not found in context",
+		})
+		return
+	}
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "invalid user id in context",
+		})
+		return
+	}
 
 	projects, err := h.service.GetUserProject(userID)
 	if err != nil {

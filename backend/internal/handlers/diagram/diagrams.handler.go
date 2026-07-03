@@ -174,7 +174,20 @@ func (h *DiagramHandlerImpl) SaveCanvas(c *gin.Context) {
 		return
 	}
 
-	userID := uint(1)
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "user not found in context",
+		})
+		return
+	}
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "invalid user id in context",
+		})
+		return
+	}
 
 	response, err := h.service.SaveCanvas(uint(diagramID), userID, req)
 	if err != nil {
@@ -256,8 +269,20 @@ func (h *DiagramHandlerImpl) RestoreVersion(c *gin.Context) {
 		return
 	}
 
-	// Temporary until JWT middleware is ready.
-	userID := uint(1)
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "user not found in context",
+		})
+		return
+	}
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "invalid user id in context",
+		})
+		return
+	}
 
 	response, err := h.service.RestoreVersion(
 		uint(diagramID),

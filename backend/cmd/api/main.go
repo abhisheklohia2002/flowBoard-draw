@@ -7,7 +7,6 @@ import (
 	handlers "flowBoard/draw/internal/handlers/diagram"
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
-	"flowBoard/draw/internal/models"
 
 	diagramRepositories "flowBoard/draw/internal/repository/diagram"
 	projectRepositories "flowBoard/draw/internal/repository/project"
@@ -30,15 +29,15 @@ func main() {
 	cfg := config.LoadEnv()
 	port := cfg.Port
 	db := connection.ConnectDB(cfg)
-	db.AutoMigrate(
-		&models.User{},
-		&models.RefreshToken{},
-		&models.Project{},
-		&models.Diagram{},
-		&models.Node{},
-		&models.Edge{},
-		&models.DiagramVersion{},
-	)
+	// db.AutoMigrate(
+	// 	&models.User{},
+	// 	&models.RefreshToken{},
+	// 	&models.Project{},
+	// 	&models.Diagram{},
+	// 	&models.Node{},
+	// 	&models.Edge{},
+	// 	&models.DiagramVersion{},
+	// )
 
 	log.Println("Server starting on port:", port)
 	r := gin.Default()
