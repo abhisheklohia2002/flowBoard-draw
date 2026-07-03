@@ -1,7 +1,8 @@
-package repository
+package users
 
 import (
 	"errors"
+
 	"flowBoard/draw/internal/models"
 
 	"gorm.io/gorm"
@@ -17,23 +18,27 @@ type UserRepositoryImpl struct {
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
-	return &UserRepositoryImpl{db: db}
+	return &UserRepositoryImpl{
+		db: db,
+	}
 }
 
 func (r *UserRepositoryImpl) Create(user *models.User) (*models.User, error) {
-	err := r.db.Create(user).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRegistered) {
-			return nil, nil
-		}
+	if err := r.db.Create(user).Error; err != nil {
+		return nil, err
 	}
-	return &models.User{}, nil
+
+	return user, nil
 }
 
 func (r *UserRepositoryImpl) FindByEmail(email string) (*models.User, error) {
-	var user = models.User{}
+	var user models.User
 
-	err := r.db.Where("email = ?", email).First(&user).Error
+	err := r.db.
+		Where("email = ?", email).
+		First(&user).
+		Error
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -43,5 +48,4 @@ func (r *UserRepositoryImpl) FindByEmail(email string) (*models.User, error) {
 	}
 
 	return &user, nil
-
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flowBoard/draw/internal/auth"
 	"flowBoard/draw/internal/config"
 	"flowBoard/draw/internal/connection"
 	userHandler "flowBoard/draw/internal/handlers/users"
@@ -46,7 +47,12 @@ func main() {
 
 	userRepository := userRepo.NewUserRepository(db)
 	refreshTokenRepo := refresh_tokens.NewRefreshTokenRepository(db)
-	tokenService := tokenservice.NewTokenService(cfg.JWT_PRIVATE_KEY, cfg.JWT_ISSUER, cfg.JWTKid)
+	privateKey, err := auth.LoadRSAPrivateKeyFromEnv("JWT_PRIVATE_KEY")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tokenService := tokenservice.NewTokenService(privateKey, cfg.JWT_ISSUER, cfg.JWTKid)
 	userService := userSvc.NewUserService(userRepository, tokenService, refreshTokenRepo)
 	userHandler := userHandler.NewUserHandler(userService)
 

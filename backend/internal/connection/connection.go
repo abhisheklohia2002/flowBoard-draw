@@ -21,6 +21,14 @@ func ConnectDB(cfg config.Config) *gorm.DB {
 		cfg.DBTimeZone,
 	)
 
+	log.Printf(cfg.DBHost,
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBName,
+		cfg.DBPort,
+		cfg.DBSSLMode,
+		cfg.DBTimeZone)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect database: ", err)

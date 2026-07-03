@@ -1,6 +1,7 @@
 package token
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"time"
 
@@ -15,7 +16,7 @@ type TokenService interface {
 }
 
 type TokenServiceImpl struct {
-	privateKey string
+	privateKey *rsa.PrivateKey
 	issuer     string
 	kid        string
 }
@@ -28,7 +29,7 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewTokenService(privateKey string, issuer string, kid string) TokenService {
+func NewTokenService(privateKey *rsa.PrivateKey, issuer string, kid string) TokenService {
 	return &TokenServiceImpl{
 		privateKey: privateKey,
 		issuer:     issuer,

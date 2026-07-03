@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -65,7 +66,7 @@ func (s *UserServiceImpl) Register(req dto.RegisterUserRequest) (*dto.RegisterUs
 	if err != nil {
 		return nil, errors.New("failed to create user")
 	}
-
+	log.Println(savedUser)
 	accessToken, err := s.tokenService.GenerateAccessToken(savedUser)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
