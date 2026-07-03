@@ -5,11 +5,17 @@ import (
 	"flowBoard/draw/internal/config"
 	"flowBoard/draw/internal/connection"
 	userHandler "flowBoard/draw/internal/handlers/users"
+	projectHandler "flowBoard/draw/internal/handlers/project"
+
 	"flowBoard/draw/internal/repository/refresh_tokens"
 	userRepo "flowBoard/draw/internal/repository/users"
+	projectRepositories "flowBoard/draw/internal/repository/project"
 	"flowBoard/draw/internal/routes"
 	tokenservice "flowBoard/draw/internal/services/token"
 	userSvc "flowBoard/draw/internal/services/users"
+	projectServices "flowBoard/draw/internal/services/project"
+
+
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -47,6 +53,10 @@ func main() {
 	refreshTokenRepo := refresh_tokens.NewRefreshTokenRepository(db)
 	privateKey, err := auth.LoadRSAPrivateKeyFromEnv("JWT_PRIVATE_KEY")
 
+	projectRepo := projectRepositories.NewProjectRepository(db)
+	projectService := projectServices.NewProjectService(projectRepo)
+	projectHandler := projectHandler.NewProjectHandler(projectService)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,7 +65,7 @@ func main() {
 	userService := userSvc.NewUserService(userRepository, tokenService, refreshTokenRepo)
 	userHandler := userHandler.NewUserHandler(userService)
 
-	routes.Routes(r, userHandler)
+	routes.Routes(r, userHandler,projectHandler)
 	r.Run(":" + port)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
