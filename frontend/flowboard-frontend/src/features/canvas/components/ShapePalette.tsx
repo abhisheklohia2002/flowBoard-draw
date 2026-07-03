@@ -95,7 +95,7 @@ export function ShapePalette({
         </div>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-3">
+      <div className="scrollbar-hide flex-1 space-y-4 overflow-y-auto p-3">
         {Object.entries(groupedShapes).map(([category, shapes]) => (
           <div key={category}>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">

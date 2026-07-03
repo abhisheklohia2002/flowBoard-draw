@@ -47,3 +47,13 @@ body {
 .text-muted {
   color: hsl(var(--muted-foreground));
 }
+
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
