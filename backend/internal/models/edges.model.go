@@ -8,9 +8,9 @@ import (
 
 type Edge struct {
 	ID        uint `json:"id" gorm:"primaryKey"`
-	DiagramID uint `json:"diagram_id" gorm:"not null;index"`
+	DiagramID uint `json:"diagram_id" gorm:"not null;index;uniqueIndex:idx_diagram_edge"`
 
-	ClientEdgeID string `json:"client_edge_id" gorm:"not null"`
+	ClientEdgeID string `json:"client_edge_id" gorm:"not null;uniqueIndex:idx_diagram_edge"`
 
 	SourceNodeID string `json:"source_node_id" gorm:"not null"`
 	TargetNodeID string `json:"target_node_id" gorm:"not null"`
@@ -21,6 +21,7 @@ type Edge struct {
 	Label    string         `json:"label"`
 	EdgeType string         `json:"edge_type" gorm:"not null;default:smoothstep"`
 	Style    datatypes.JSON `json:"style,omitempty" gorm:"type:jsonb"`
+	Data     datatypes.JSON `json:"data,omitempty" gorm:"type:jsonb"`
 
 	Diagram Diagram `json:"diagram,omitempty" gorm:"foreignKey:DiagramID"`
 

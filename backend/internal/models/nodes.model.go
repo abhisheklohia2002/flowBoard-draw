@@ -8,11 +8,12 @@ import (
 
 type Node struct {
 	ID        uint `json:"id" gorm:"primaryKey"`
-	DiagramID uint `json:"diagram_id" gorm:"not null;index"`
+	DiagramID uint `json:"diagram_id" gorm:"not null;index;uniqueIndex:idx_diagram_node"`
 
-	ClientNodeID string `json:"client_node_id" gorm:"not null"`
-	Type         string `json:"type" gorm:"not null"`
-	Label        string `json:"label"`
+	ClientNodeID string `json:"client_node_id" gorm:"not null;uniqueIndex:idx_diagram_node"`
+
+	Type  string `json:"type" gorm:"not null"`
+	Label string `json:"label"`
 
 	PositionX float64 `json:"position_x" gorm:"not null;default:0"`
 	PositionY float64 `json:"position_y" gorm:"not null;default:0"`
