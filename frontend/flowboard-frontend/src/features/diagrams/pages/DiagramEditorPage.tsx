@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   Background,
+  ConnectionMode,
   Controls,
+  Handle,
+  NodeResizer,
+  Position,
   ReactFlow,
   addEdge,
   applyEdgeChanges,
@@ -12,15 +16,10 @@ import {
   type EdgeChange,
   type Node,
   type NodeChange,
+  type NodeProps,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import {
-  Clock,
-  Palette,
-  Save,
-  Trash2,
-  Workflow,
-} from "lucide-react";
+import { Clock, Palette, Save, Trash2, Workflow } from "lucide-react";
 
 import { DiagramVersionsPanel } from "../components/DiagramVersionsPanel";
 import { useCanvas, useSaveCanvas } from "../hooks/useDiagrams";
@@ -31,7 +30,124 @@ import type { ShapeDefinition } from "@/features/canvas/config/shapes";
 import { ShapePalette } from "@/features/canvas/components/ShapePalette";
 import { NODE_COLORS, NodeColor } from "@/features/canvas/config/colors";
 
+type ShapeNodeData = {
+  label: string;
+  shapeType: string;
+  bg: string;
+  border: string;
+  text: string;
+};
+
+function ShapeNode({ data, selected }: NodeProps<Node<ShapeNodeData>>) {
+  const shapeType = data.shapeType;
+
+  const nodeBorderColor = data.border || "#22d3ee";
+
+  const handleClassName = "!h-1 !w-1  !bg-slate-950 !opacity-80";
+  const isDiamond = shapeType === "diamond";
+  const isCircle = shapeType === "circle";
+  const isDatabase = shapeType === "database";
+  const isRounded = shapeType === "rounded" || shapeType === "service";
+
+  const handles = [
+    { id: "top", position: Position.Top },
+    { id: "right", position: Position.Right },
+    { id: "bottom", position: Position.Bottom },
+    { id: "left", position: Position.Left },
+  ];
+
+  return (
+    <div className="relative h-full w-full">
+      <NodeResizer
+        isVisible={selected}
+        minWidth={80}
+        minHeight={50}
+        handleClassName={handleClassName}
+        lineClassName="!border"
+        handleStyle={{
+          borderColor: nodeBorderColor,
+        }}
+        lineStyle={{
+          borderColor: nodeBorderColor,
+        }}
+      />
+
+      {handles.map((handle) => (
+        <Handle
+          key={`target-${handle.id}`}
+          id={`target-${handle.id}`}
+          type="target"
+          position={handle.position}
+          className={handleClassName}
+          style={{
+            borderColor: nodeBorderColor,
+          }}
+        />
+      ))}
+
+      {handles.map((handle) => (
+        <Handle
+          key={`source-${handle.id}`}
+          id={`source-${handle.id}`}
+          type="source"
+          position={handle.position}
+          className="!h-2 !w-2 !border-1 !border-[#fff]-200 !bg-slate-350"
+        />
+      ))}
+
+      {isDiamond ? (
+        <div className="flex h-full w-full items-center justify-center p-4">
+          <div
+            className={[
+              "flex h-full w-full rotate-45 items-center justify-center border shadow-lg transition",
+              selected
+                ? "ring-2 ring-cyan-300 ring-offset-2 ring-offset-slate-950"
+                : "",
+            ].join(" ")}
+            style={{
+              backgroundColor: data.bg,
+              borderColor: data.border,
+              color: data.text,
+            }}
+          >
+            <div className="-rotate-45 px-2 text-center text-sm font-medium">
+              {data.label}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={[
+            "flex h-full w-full items-center justify-center border px-3 text-center text-sm font-medium shadow-lg transition",
+            selected
+              ? "ring-2 ring-cyan-300 ring-offset-2 ring-offset-slate-950"
+              : "",
+            isCircle ? "rounded-full" : "",
+            isDatabase ? "rounded-[28px]" : "",
+            isRounded ? "rounded-2xl" : "",
+            !isCircle && !isDatabase && !isRounded ? "rounded-md" : "",
+          ].join(" ")}
+          style={{
+            backgroundColor: data.bg,
+            borderColor: data.border,
+            color: data.text,
+          }}
+        >
+          {data.label}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const nodeTypes = {
+  shape: ShapeNode,
+};
+
 export function DiagramEditorPage() {
+  const [shapeBorderColor, setShapeBorderColor] = useState("#22d3ee");
+  const [lineColor, setLineColor] = useState("#67e8f9");
+
   const diagramID = Number(useParams().diagramID);
 
   const canvasQuery = useCanvas(diagramID);
@@ -40,9 +156,7 @@ export function DiagramEditorPage() {
   const { isDirty, setDirty, setCurrentDiagramID, setSelectedElementID } =
     useCanvasStore();
 
-  const [selectedColor, setSelectedColor] = useState<NodeColor>(
-    NODE_COLORS[0],
-  );
+  const [selectedColor, setSelectedColor] = useState<NodeColor>(NODE_COLORS[0]);
 
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -61,59 +175,46 @@ export function DiagramEditorPage() {
 
   const createShapeNode = useCallback(
     (shape: ShapeDefinition, index: number): Node => {
-      const baseStyle: React.CSSProperties = {
-        padding: 12,
-        border: `1px solid ${selectedColor.border}`,
-        background: selectedColor.bg,
-        backgroundColor: selectedColor.bg,
-        color: selectedColor.text,
-        minWidth: 140,
-        minHeight: 60,
-      };
+      let width = 150;
+      let height = 70;
 
       if (shape.type === "circle") {
-        baseStyle.borderRadius = "9999px";
-        baseStyle.width = 110;
-        baseStyle.height = 110;
-        baseStyle.display = "flex";
-        baseStyle.alignItems = "center";
-        baseStyle.justifyContent = "center";
-      }
-
-      if (shape.type === "database") {
-        baseStyle.borderRadius = 28;
-      }
-
-      if (shape.type === "rounded" || shape.type === "service") {
-        baseStyle.borderRadius = 14;
+        width = 110;
+        height = 110;
       }
 
       if (shape.type === "diamond") {
-        baseStyle.transform = "rotate(45deg)";
-        baseStyle.width = 120;
-        baseStyle.height = 120;
-        baseStyle.display = "flex";
-        baseStyle.alignItems = "center";
-        baseStyle.justifyContent = "center";
+        width = 130;
+        height = 130;
+      }
+
+      if (shape.type === "database") {
+        width = 160;
+        height = 75;
       }
 
       return {
         id: `${shape.type}_${Date.now()}`,
-        type: "default",
+        type: "shape",
         position: {
           x: 220 + index * 40,
           y: 160 + index * 30,
         },
+        style: {
+          width,
+          height,
+        },
         data: {
           label: shape.label,
           shapeType: shape.type,
+          bg: selectedColor.bg,
+          border: shapeBorderColor,
+          text: selectedColor.text,
         },
-        style: baseStyle,
       };
     },
-    [selectedColor],
+    [selectedColor, shapeBorderColor],
   );
-
   const addShape = useCallback(
     (shape: ShapeDefinition) => {
       setNodes((current) => [
@@ -135,13 +236,50 @@ export function DiagramEditorPage() {
   );
 
   const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
-      setEdges((current) => applyEdgeChanges(changes, current));
+    (changes: any[]) => {
+      setEdges((current) => {
+        const updatedEdges = applyEdgeChanges(changes, current);
+
+        return updatedEdges.map((edge) => {
+          const stroke =
+            typeof edge.style?.stroke === "string"
+              ? edge.style.stroke
+              : lineColor;
+
+          return {
+            ...edge,
+            animated: edge.selected,
+            style: {
+              ...edge.style,
+              stroke,
+              strokeWidth: edge.selected ? 4 : 2,
+              filter: edge.selected
+                ? `drop-shadow(0 0 6px ${stroke})`
+                : undefined,
+            },
+          };
+        });
+      });
+
       setDirty(true);
     },
-    [setDirty],
+    [setDirty, lineColor],
   );
 
+  const getEdgeStyle = useCallback(
+    (edge: Edge): React.CSSProperties => {
+      const stroke =
+        typeof edge.style?.stroke === "string" ? edge.style.stroke : lineColor;
+
+      return {
+        ...edge.style,
+        stroke,
+        strokeWidth: edge.selected ? 4 : 2,
+        filter: edge.selected ? `drop-shadow(0 0 6px ${stroke})` : undefined,
+      };
+    },
+    [lineColor],
+  );
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((current) =>
@@ -151,6 +289,10 @@ export function DiagramEditorPage() {
             id: `edge_${Date.now()}`,
             type: "smoothstep",
             animated: false,
+            style: {
+              stroke: lineColor,
+              strokeWidth: 2,
+            },
           },
           current,
         ),
@@ -158,7 +300,7 @@ export function DiagramEditorPage() {
 
       setDirty(true);
     },
-    [setDirty],
+    [setDirty, lineColor],
   );
 
   const deleteSelected = useCallback(() => {
@@ -211,12 +353,11 @@ export function DiagramEditorPage() {
 
           return {
             ...node,
-            style: {
-              ...node.style,
-              background: color.bg,
-              backgroundColor: color.bg,
-              border: `1px solid ${color.border}`,
-              color: color.text,
+            data: {
+              ...node.data,
+              bg: color.bg,
+              border: color.border,
+              text: color.text,
             },
           };
         }),
@@ -227,9 +368,74 @@ export function DiagramEditorPage() {
     [nodes, setDirty],
   );
 
+  const handleLineColorChange = useCallback(
+    (color: string) => {
+      setLineColor(color);
+
+      const selectedEdgeIDs = edges
+        .filter((edge) => edge.selected)
+        .map((edge) => edge.id);
+
+      if (selectedEdgeIDs.length === 0) {
+        return;
+      }
+
+      setEdges((current) =>
+        current.map((edge) => {
+          if (!selectedEdgeIDs.includes(edge.id)) {
+            return edge;
+          }
+
+          return {
+            ...edge,
+            style: {
+              ...edge.style,
+              stroke: color,
+              strokeWidth: 2,
+            },
+          };
+        }),
+      );
+
+      setDirty(true);
+    },
+    [edges, setDirty],
+  );
+
+  const handleShapeBorderColorChange = useCallback(
+    (color: string) => {
+      setShapeBorderColor(color);
+
+      const selectedNodeIDs = nodes
+        .filter((node) => node.selected)
+        .map((node) => node.id);
+
+      if (selectedNodeIDs.length === 0) {
+        return;
+      }
+
+      setNodes((current) =>
+        current.map((node) => {
+          if (!selectedNodeIDs.includes(node.id)) {
+            return node;
+          }
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              border: color,
+            },
+          };
+        }),
+      );
+
+      setDirty(true);
+    },
+    [nodes, setDirty],
+  );
   const handleSave = useCallback(() => {
-    const viewport =
-      flow?.getViewport() ??
+    const viewport = flow?.getViewport() ??
       canvasQuery.data?.viewport ?? {
         x: 0,
         y: 0,
@@ -240,7 +446,7 @@ export function DiagramEditorPage() {
       {
         nodes: nodes.map((node) => ({
           id: node.id,
-          type: node.type ?? "default",
+          type: node.type ?? "shape",
           position: node.position,
           width: node.width,
           height: node.height,
@@ -277,15 +483,38 @@ export function DiagramEditorPage() {
     if (!canvasQuery.data) return;
 
     setNodes(
-      canvasQuery.data.nodes.map((node) => ({
-        id: node.id,
-        type: "default",
-        position: node.position,
-        width: node.width,
-        height: node.height,
-        data: node.data ?? { label: node.id },
-        style: node.style,
-      })),
+      canvasQuery.data.nodes.map((node) => {
+        const nodeData = node.data as Record<string, unknown> | undefined;
+        const nodeStyle = node.style as React.CSSProperties | undefined;
+
+        return {
+          id: node.id,
+          type: "shape",
+          position: node.position,
+          width: node.width,
+          height: node.height,
+          style: node.style,
+          data: {
+            label: String(nodeData?.label ?? node.id),
+            shapeType: String(nodeData?.shapeType ?? "rectangle"),
+
+            bg: String(
+              nodeData?.bg ??
+                nodeStyle?.backgroundColor ??
+                nodeStyle?.background ??
+                "#0f172a",
+            ),
+            border: String(
+              nodeData?.border ??
+                String(nodeStyle?.border ?? "#22d3ee").replace(
+                  "1px solid ",
+                  "",
+                ),
+            ),
+            text: String(nodeData?.text ?? nodeStyle?.color ?? "#ffffff"),
+          },
+        };
+      }),
     );
 
     setEdges(
@@ -298,7 +527,10 @@ export function DiagramEditorPage() {
         type: edge.type ?? "smoothstep",
         label: edge.label,
         data: edge.data,
-        style: edge.style,
+        style: edge.style ?? {
+          stroke: "#67e8f9",
+          strokeWidth: 2,
+        },
       })),
     );
 
@@ -367,7 +599,6 @@ export function DiagramEditorPage() {
   return (
     <div className="-m-4 h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 md:-m-6">
       <div className="relative h-full w-full">
-        {/* Top editor bar */}
         <div className="absolute left-4 right-4 top-4 z-20 flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/90 px-4 py-3 shadow-2xl backdrop-blur">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300">
@@ -409,6 +640,32 @@ export function DiagramEditorPage() {
               <Palette className="mr-2 h-4 w-4" />
               Background
             </Button>
+
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800 px-3 py-2">
+              <span className="text-xs text-slate-300">Border</span>
+
+              <input
+                type="color"
+                value={shapeBorderColor}
+                onChange={(event) =>
+                  handleShapeBorderColorChange(event.target.value)
+                }
+                className="h-6 w-7 cursor-pointer rounded border border-white/10 bg-transparent"
+                title="Shape border color"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800 px-3 py-2">
+              <span className="text-xs text-slate-300">Line</span>
+
+              <input
+                type="color"
+                value={lineColor}
+                onChange={(event) => handleLineColorChange(event.target.value)}
+                className="h-6 w-7 cursor-pointer rounded border border-white/10 bg-transparent"
+                title="Connection line color"
+              />
+            </div>
 
             <Button
               size="sm"
@@ -529,17 +786,20 @@ export function DiagramEditorPage() {
           </div>
         </div>
 
-        {/* Left floating tools */}
         <ShapePalette
           selectedColor={selectedColor}
           onColorChange={handleColorChange}
           onAddShape={addShape}
         />
 
-        {/* Full canvas */}
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          nodeTypes={nodeTypes}
+          connectionMode={ConnectionMode.Loose}
+          nodesDraggable
+          nodesConnectable
+          elementsSelectable
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
@@ -547,25 +807,54 @@ export function DiagramEditorPage() {
           onPaneClick={() => {
             setSelectedElementID(null);
             setShowBgPanel(false);
+
+            setEdges((current) =>
+              current.map((edge) => {
+                const stroke =
+                  typeof edge.style?.stroke === "string"
+                    ? edge.style.stroke
+                    : lineColor;
+
+                return {
+                  ...edge,
+                  selected: false,
+                  animated: false,
+                  style: {
+                    ...edge.style,
+                    stroke,
+                    strokeWidth: 2,
+                    filter: undefined,
+                  },
+                };
+              }),
+            );
           }}
           onNodeClick={(_, node) => {
             setSelectedElementID(node.id);
             setShowBgPanel(false);
 
-            const style = node.style as React.CSSProperties | undefined;
+            const data = node.data as Record<string, string>;
 
-            if (style?.background && style?.border && style?.color) {
+            if (data.bg && data.border && data.text) {
               setSelectedColor({
                 name: "Custom",
-                bg: String(style.background),
-                border: String(style.border).replace("1px solid ", ""),
-                text: String(style.color),
+                bg: data.bg,
+                border: data.border,
+                text: data.text,
               });
+
+              setShapeBorderColor(data.border);
             }
           }}
           onEdgeClick={(_, edge) => {
             setSelectedElementID(edge.id);
             setShowBgPanel(false);
+
+            const stroke = edge.style?.stroke;
+
+            if (typeof stroke === "string") {
+              setLineColor(stroke);
+            }
           }}
           fitView
           className="h-full w-full"
@@ -581,13 +870,12 @@ export function DiagramEditorPage() {
             style={{
               top: 96,
               right: 16,
-              color:"slategrey",
-              backgroundColor:"ButtonShadow"
+              color: "slategrey",
+              backgroundColor: "ButtonShadow",
             }}
           />
         </ReactFlow>
 
-        {/* Version drawer */}
         {showVersions && (
           <div className="absolute bottom-4 right-4 top-24 z-30 w-[360px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur">
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
