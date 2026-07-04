@@ -722,7 +722,7 @@ export function DiagramEditorPage() {
       setEdges((current) => {
         const updatedEdges = applyEdgeChanges(changes, current);
 
-        return updatedEdges.map((edge) => {
+        return updatedEdges.map((edge:any) => {
           const stroke =
             typeof edge.style?.stroke === "string"
               ? edge.style.stroke
@@ -1413,7 +1413,7 @@ export function DiagramEditorPage() {
           />
 
           <ReactFlow
-            onNodeDragStop={onNodeDragStop}
+            onNodeDragStop={onNodeDragStop as any}
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
@@ -1421,7 +1421,7 @@ export function DiagramEditorPage() {
             nodesDraggable
             nodesConnectable
             elementsSelectable
-            onNodesChange={onNodesChange}
+            onNodesChange={onNodesChange as any}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onInit={setFlow}

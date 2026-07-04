@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { useMarkNotificationRead, useNotifications, useUnreadCount } from "@/features/notification/hooks/useNotifications";
-
-export function NotificationBell() {
+interface NotificationBellProps {
+  className?: string;
+}
+export function NotificationBell({className}:NotificationBellProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -28,7 +30,7 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="relative">
+    <div className={`relative  ${className}`}>
       <Button
         size="icon"
         variant="ghost"

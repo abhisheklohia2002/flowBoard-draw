@@ -18,18 +18,17 @@ import { User } from "@/types/auth";
 import { useNotificationStream } from "@/features/notification/hooks/useNotificationStream";
 import { NotificationBell } from "../NotificationBell/NotificationBell";
 
-export  function AppLayout() {
+export function AppLayout() {
   const { sidebarCollapsed, toggleSidebar } = useAppStore();
   const logout = useLogout();
 
+  useNotificationStream();
 
-   useNotificationStream();
- 
-   const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [me, setMe] = useState<User | null>(null);
   const [isMeLoading, setIsMeLoading] = useState(true);
-useEffect(() => {
+  useEffect(() => {
     const fetchMe = async () => {
       try {
         const user = await getMe();
@@ -128,41 +127,40 @@ useEffect(() => {
         ].join(" ")}
       >
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-slate-950/80 px-4 backdrop-blur">
-  <div className="flex items-center gap-3">
-    <Button
-      size="icon"
-      variant="ghost"
-      className="text-slate-300 hover:bg-slate-900 hover:text-white"
-      onClick={toggleSidebar}
-    >
-      <Menu className="h-5 w-5" />
-    </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="text-slate-300 hover:bg-slate-900 hover:text-white"
+              onClick={toggleSidebar}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
 
-    <div>
-      <p className="text-sm font-medium text-white">Workspace</p>
-      <p className="text-xs text-slate-500">Build diagrams faster</p>
-    </div>
-  </div>
+            <div>
+              <p className="text-sm font-medium text-white">Workspace</p>
+              <p className="text-xs text-slate-500">Build diagrams faster</p>
+            </div>
+          </div>
 
-  <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-900/70 px-3 py-2">
-        
-         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
-      <NotificationBell className="h-5 w-5" />
-    </div>
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
-      <UserCircle className="h-5 w-5" />
-    </div>
+          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-900/70 px-3 py-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
+              <NotificationBell className="h-5 w-5" />
+            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
+              <UserCircle className="h-5 w-5" />
+            </div>
 
-    <div className="hidden text-right sm:block">
-      <p className="max-w-[180px] truncate text-sm font-medium text-white">
-        {me?.full_name || "User"}
-      </p>
-      <p className="max-w-[220px] truncate text-xs text-slate-500">
-        {me?.email || "Loading..."}
-      </p>
-    </div>
-  </div>
-</header>
+            <div className="hidden text-right sm:block">
+              <p className="max-w-[180px] truncate text-sm font-medium text-white">
+                {me?.full_name || "User"}
+              </p>
+              <p className="max-w-[220px] truncate text-xs text-slate-500">
+                {me?.email || "Loading..."}
+              </p>
+            </div>
+          </div>
+        </header>
 
         <main className="p-4 md:p-6">
           <Outlet />
