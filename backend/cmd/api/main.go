@@ -8,6 +8,8 @@ import (
 	handlers "flowBoard/draw/internal/handlers/diagram"
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
+	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
+	"flowBoard/draw/internal/realtime"
 
 	"os"
 	"time"
@@ -115,7 +117,11 @@ func main() {
 	diagramService := diagramServices.NewDiagramService(diagramRepo)
 	diagramHandler := handlers.NewDiagramHandler(diagramService, collaborationServices)
 
-	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler)
+	hub := realtime.NewHub()
+	go hub.Run()
+
+	realtimeHandler := realTimeHandlers.NewRealtimeHandler(hub, collaborationServices)
+	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler,realtimeHandler)
 
 	r.Run(":" + "8080")
 	if err := r.Run(":" + port); err != nil {

@@ -6,6 +6,7 @@ import (
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
 
+	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
 	middleware "flowBoard/draw/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,7 @@ import (
 func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHandler projectHandler.ProjectHandler,
 	diagramHandler diagramHandler.DiagramHandler,
 	collaborationHandler collaborationHandler.CollaborationHandler,
+	realtimeHandler realTimeHandlers.RealtimeHandler,
 ) {
 	api := router.Group("/api")
 	{
@@ -29,7 +31,7 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 		protected.GET("/users/search", collaborationHandler.SearchUsers)
 		protected.GET("/user/self", userhandler.Self)
 		protected.POST("/user/logout", userhandler.Logout)
-
+		protected.GET("/ws/diagrams/:diagramID", realtimeHandler.HandleDiagramWS)
 		projects := protected.Group("/projects")
 		{
 			projects.POST("", projectHandler.CreateProject)
