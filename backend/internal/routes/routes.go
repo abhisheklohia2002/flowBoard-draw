@@ -1,9 +1,11 @@
 package routes
 
 import (
+	collaborationHandler "flowBoard/draw/internal/handlers/collaboration"
 	diagramHandler "flowBoard/draw/internal/handlers/diagram"
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
+
 	middleware "flowBoard/draw/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +13,7 @@ import (
 
 func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHandler projectHandler.ProjectHandler,
 	diagramHandler diagramHandler.DiagramHandler,
+	collaborationHandler collaborationHandler.CollaborationHandler,
 ) {
 	api := router.Group("/api")
 	{

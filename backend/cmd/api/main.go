@@ -4,18 +4,22 @@ import (
 	"flowBoard/draw/internal/auth"
 	"flowBoard/draw/internal/config"
 	"flowBoard/draw/internal/connection"
+	collaborationHandler "flowBoard/draw/internal/handlers/collaboration"
 	handlers "flowBoard/draw/internal/handlers/diagram"
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
+
 	"os"
 	"time"
 
+	collaborationRepo "flowBoard/draw/internal/repository/collaboration"
 	diagramRepositories "flowBoard/draw/internal/repository/diagram"
 	projectRepositories "flowBoard/draw/internal/repository/project"
 
 	"flowBoard/draw/internal/repository/refresh_tokens"
 	userRepo "flowBoard/draw/internal/repository/users"
 	"flowBoard/draw/internal/routes"
+	collaborationServices "flowBoard/draw/internal/services/collaboration"
 	diagramServices "flowBoard/draw/internal/services/diagrams"
 	projectServices "flowBoard/draw/internal/services/project"
 
@@ -106,7 +110,12 @@ func main() {
 	diagramRepo := diagramRepositories.NewDiagramRepository(db)
 	diagramService := diagramServices.NewDiagramService(diagramRepo)
 	diagramHandler := handlers.NewDiagramHandler(diagramService)
-	routes.Routes(r, userHandler, projectHandler, diagramHandler)
+
+	collaborationRepo := collaborationRepo.NewCollaborationRepository(db)
+	collaborationServices := collaborationServices.NewCollaborationService(userRepository, diagramRepo, collaborationRepo)
+	collaborationHandler := collaborationHandler.NewCollaborationHandler(collaborationServices)
+	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler)
+
 	r.Run(":" + "8080")
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
