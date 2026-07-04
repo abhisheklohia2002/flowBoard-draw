@@ -58,3 +58,32 @@ func RequireUserID(c *gin.Context) (uint, bool) {
 
 	return userID, true
 }
+
+func ClearAuthCookies(c *gin.Context) {
+	isProduction := os.Getenv("APP_ENV") == "production"
+
+	sameSite := http.SameSiteLaxMode
+	if isProduction {
+		sameSite = http.SameSiteNoneMode
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   isProduction,
+		SameSite: sameSite,
+	})
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   isProduction,
+		SameSite: sameSite,
+	})
+}

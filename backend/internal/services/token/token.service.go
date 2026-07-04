@@ -13,6 +13,7 @@ import (
 type TokenService interface {
 	GenerateAccessToken(user *models.User) (string, error)
 	GenerateRefreshToken(user *models.User) (string, error)
+	ValidateRefreshToken(tokenString string) (*CustomClaims, error)
 }
 
 type TokenServiceImpl struct {
@@ -81,4 +82,35 @@ func (s *TokenServiceImpl) GenerateRefreshToken(user *models.User) (string, erro
 	token.Header["typ"] = "JWT"
 
 	return token.SignedString(s.privateKey)
+}
+
+func (s *TokenServiceImpl) ValidateRefreshToken(tokenString string) (*CustomClaims, error) {
+	claims := &CustomClaims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		func(token *jwt.Token) (any, error) {
+			if token.Method.Alg() != jwt.SigningMethodRS256.Alg() {
+				return nil, fmt.Errorf("unexpected signing method: %s", token.Method.Alg())
+			}
+
+			return &s.privateKey.PublicKey, nil
+		},
+		jwt.WithIssuer(s.issuer),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid refresh token")
+	}
+
+	if claims.TokenType != "refresh" {
+		return nil, fmt.Errorf("invalid token type")
+	}
+
+	return claims, nil
 }

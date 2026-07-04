@@ -7,6 +7,8 @@ import (
 	handlers "flowBoard/draw/internal/handlers/diagram"
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
+	"os"
+	"time"
 
 	diagramRepositories "flowBoard/draw/internal/repository/diagram"
 	projectRepositories "flowBoard/draw/internal/repository/project"
@@ -22,6 +24,7 @@ import (
 
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,6 +44,37 @@ func main() {
 
 	log.Println("Server starting on port:", port)
 	r := gin.Default()
+
+	allowedOrigins := []string{"http://localhost:5173"}
+
+	if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
+		allowedOrigins = append(allowedOrigins, frontendURL)
+	}
+	log.Printf("Allowed CORS origins: %v\n", allowedOrigins)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: allowedOrigins,
+		AllowMethods: []string{
+			"GET",
+			"POST",
+			"PUT",
+			"PATCH",
+			"DELETE",
+			"OPTIONS",
+		},
+		AllowHeaders: []string{
+			"Origin",
+			"Content-Type",
+			"Accept",
+			"Authorization",
+			"X-Requested-With",
+		},
+		ExposeHeaders: []string{
+			"Content-Length",
+		},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	r.Use(gin.Logger())
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{

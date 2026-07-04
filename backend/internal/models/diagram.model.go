@@ -18,11 +18,11 @@ type Diagram struct {
 
 	Data datatypes.JSON `json:"data,omitempty" gorm:"type:jsonb"`
 
-	Project  Project          `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
-	Nodes    []Node           `json:"nodes,omitempty" gorm:"foreignKey:DiagramID"`
-	Edges    []Edge           `json:"edges,omitempty" gorm:"foreignKey:DiagramID"`
-	Versions []DiagramVersion `json:"versions,omitempty" gorm:"foreignKey:DiagramID"`
-
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Project       Project               `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
+	Nodes         []Node                `json:"nodes,omitempty" gorm:"foreignKey:DiagramID"`
+	Edges         []Edge                `json:"edges,omitempty" gorm:"foreignKey:DiagramID"`
+	Versions      []DiagramVersion      `json:"versions,omitempty" gorm:"foreignKey:DiagramID"`
+	Collaborators []DiagramCollaborator `json:"collaborators,omitempty" gorm:"foreignKey:DiagramID"`
+	CreatedAt     time.Time             `json:"created_at"`
+	UpdatedAt     time.Time             `json:"updated_at"`
 }
