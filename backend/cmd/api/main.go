@@ -16,22 +16,28 @@ import (
 
 	collaborationRepo "flowBoard/draw/internal/repository/collaboration"
 	diagramRepositories "flowBoard/draw/internal/repository/diagram"
+	notificationRepositories "flowBoard/draw/internal/repository/notifications"
 	projectRepositories "flowBoard/draw/internal/repository/project"
 
 	"flowBoard/draw/internal/repository/refresh_tokens"
 	userRepo "flowBoard/draw/internal/repository/users"
 	"flowBoard/draw/internal/routes"
 	collaborationServices "flowBoard/draw/internal/services/collaboration"
+	notificationServices "flowBoard/draw/internal/services/notifications"
+
 	diagramServices "flowBoard/draw/internal/services/diagrams"
 	projectServices "flowBoard/draw/internal/services/project"
 
+	notificationHandler "flowBoard/draw/internal/handlers/notification"
+	notificationStreamHandler "flowBoard/draw/internal/handlers/notification-stream"
+
 	tokenservice "flowBoard/draw/internal/services/token"
 	userSvc "flowBoard/draw/internal/services/users"
-
 	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -93,6 +99,9 @@ func main() {
 	)
 
 	//Routes setup
+	rdb := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
 	userRepository := userRepo.NewUserRepository(db)
 	refreshTokenRepo := refresh_tokens.NewRefreshTokenRepository(db)
 	privateKey, err := auth.LoadRSAPrivateKeyFromEnv("JWT_PRIVATE_KEY")
@@ -109,19 +118,26 @@ func main() {
 	userService := userSvc.NewUserService(userRepository, tokenService, refreshTokenRepo)
 	userHandler := userHandler.NewUserHandler(userService)
 
+	notificationRepo := notificationRepositories.NewNotificationRepository(db)
 	diagramRepo := diagramRepositories.NewDiagramRepository(db)
 	collaborationRepo := collaborationRepo.NewCollaborationRepository(db)
-	collaborationServices := collaborationServices.NewCollaborationService(userRepository, diagramRepo, collaborationRepo)
-	collaborationHandler := collaborationHandler.NewCollaborationHandler(collaborationServices)
 
 	diagramService := diagramServices.NewDiagramService(diagramRepo)
-	diagramHandler := handlers.NewDiagramHandler(diagramService, collaborationServices)
 
 	hub := realtime.NewHub()
 	go hub.Run()
 
+	notificationPublisher := realtime.NewRedisNotificationPublisher(rdb)
+	notificationServices := notificationServices.NewNotificationService(notificationRepo, notificationPublisher)
+	collaborationServices := collaborationServices.NewCollaborationService(userRepository, diagramRepo, collaborationRepo, notificationServices)
+	collaborationHandler := collaborationHandler.NewCollaborationHandler(collaborationServices)
+	diagramHandler := handlers.NewDiagramHandler(diagramService, collaborationServices)
 	realtimeHandler := realTimeHandlers.NewRealtimeHandler(hub, collaborationServices)
-	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler, *realtimeHandler)
+
+	notificationHandler := notificationHandler.NewNotificationHandler(notificationServices)
+	notificationStreamHandler := notificationStreamHandler.NewNotificationStreamHandler(rdb)
+
+	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler, *realtimeHandler, *notificationHandler, *notificationStreamHandler)
 
 	r.Run(":" + "8080")
 	if err := r.Run(":" + port); err != nil {

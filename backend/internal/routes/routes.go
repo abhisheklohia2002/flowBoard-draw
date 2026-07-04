@@ -6,6 +6,8 @@ import (
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
 
+	notificationHandler "flowBoard/draw/internal/handlers/notification"
+	notificationStreamHandler "flowBoard/draw/internal/handlers/notification-stream"
 	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
 	middleware "flowBoard/draw/internal/middleware"
 
@@ -16,6 +18,9 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 	diagramHandler diagramHandler.DiagramHandler,
 	collaborationHandler collaborationHandler.CollaborationHandler,
 	realtimeHandler realTimeHandlers.RealtimeHandler,
+	notificationHandler notificationHandler.NotificationHandler,
+	notificationStreamHandler notificationStreamHandler.NotificationStreamHandler,
+
 ) {
 	api := router.Group("/api")
 	{
@@ -64,6 +69,16 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 			collaboration.PATCH("/diagrams/:diagramID/collaborators/:userID/role", collaborationHandler.UpdateRole)
 		}
 
+		notifications := protected.Group("")
+		{
+			notifications.GET("/notifications", notificationHandler.GetNotifications)
+			notifications.GET("/notifications/unread-count", notificationHandler.UnreadCount)
+			notifications.PATCH("/notifications/:notificationID/read", notificationHandler.MarkAsRead)
+			notifications.PATCH("/notifications/read-all", notificationHandler.MarkAllAsRead)
+		}
+
+		// Realtime notification SSE stream
+		protected.GET("/notifications/stream", notificationStreamHandler.Stream)
 	}
 
 }

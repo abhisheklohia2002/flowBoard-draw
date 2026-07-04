@@ -1,4 +1,4 @@
-package notification
+package notificationStream
 
 import (
 	"context"
