@@ -7,8 +7,8 @@ import (
 	collaborationHandler "flowBoard/draw/internal/handlers/collaboration"
 	handlers "flowBoard/draw/internal/handlers/diagram"
 	projectHandler "flowBoard/draw/internal/handlers/project"
-	userHandler "flowBoard/draw/internal/handlers/users"
 	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
+	userHandler "flowBoard/draw/internal/handlers/users"
 	"flowBoard/draw/internal/realtime"
 
 	"os"
@@ -121,7 +121,7 @@ func main() {
 	go hub.Run()
 
 	realtimeHandler := realTimeHandlers.NewRealtimeHandler(hub, collaborationServices)
-	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler,realtimeHandler)
+	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler, *realtimeHandler)
 
 	r.Run(":" + "8080")
 	if err := r.Run(":" + port); err != nil {
