@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateProject, useProjects } from "../hooks/useProjects";
+import { SharedWithMeSection } from "@/components/SharedWithMeSection/SharedWithMeSection";
 
 export function ProjectsPage() {
   const projects = useProjects();
@@ -73,6 +74,7 @@ export function ProjectsPage() {
           </Link>
         ))}
       </div>
+      <SharedWithMeSection />
     </div>
   );
-}
+} 

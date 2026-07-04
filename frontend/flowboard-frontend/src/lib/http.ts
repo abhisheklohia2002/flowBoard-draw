@@ -86,7 +86,7 @@ http.interceptors.response.use(
         processQueue(refreshError);
 
 
-        window.location.href = "/login";
+        window.location.href = "/auth";
 
         return Promise.reject(refreshError);
       } finally {

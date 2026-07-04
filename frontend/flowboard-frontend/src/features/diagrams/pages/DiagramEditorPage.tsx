@@ -8,6 +8,7 @@ import {
   NodeResizer,
   Position,
   ReactFlow,
+  ViewportPortal,
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
@@ -17,26 +18,30 @@ import {
   type Node,
   type NodeChange,
   type NodeProps,
+  type OnNodeDrag,
   type ReactFlowInstance,
 } from "@xyflow/react";
-import type { OnNodeDrag } from "@xyflow/react";
+
 import { Clock, Palette, Save, Share2, Trash2, Workflow } from "lucide-react";
-  import type {
+
+import type {
   RealtimeMessage,
   NodeAddedPayload,
   NodeUpdatedPayload,
   NodeDeletedPayload,
   EdgeAddedPayload,
   EdgeDeletedPayload,
+  EdgeUpdatedPayload,
+  ElementActivityPayload,
 } from "@/features/realtime/types";
+
 import { DiagramVersionsPanel } from "../components/DiagramVersionsPanel";
 import { useCanvas, useSaveCanvas } from "../hooks/useDiagrams";
 import { useCanvasStore } from "@/features/canvas/store/canvasStore";
 import { Button } from "@/components/ui/button";
-
 import type { ShapeDefinition } from "@/features/canvas/config/shapes";
 import { ShapePalette } from "@/features/canvas/components/ShapePalette";
-import { NODE_COLORS, NodeColor } from "@/features/canvas/config/colors";
+import { NODE_COLORS, type NodeColor } from "@/features/canvas/config/colors";
 import { CollaborateDialog } from "@/features/collaboration/components/CollaborateDialog";
 import { useDiagramRealtime } from "@/features/realtime/hook/useDiagramRealtime";
 
@@ -46,6 +51,20 @@ type ShapeNodeData = {
   bg: string;
   border: string;
   text: string;
+  [key: string]: unknown;
+};
+
+type ShapeNodeType = Node<ShapeNodeData, "shape">;
+type FlowNode = ShapeNodeType;
+type FlowEdge = Edge;
+
+type ActivityIndicator = {
+  elementID: string;
+  elementType: "node" | "edge";
+  userID: number;
+  userName: string;
+  action: string;
+  expiresAt: number;
 };
 
 function getHandleLayout(shapeType: string) {
@@ -125,29 +144,28 @@ function getHandleLayout(shapeType: string) {
   ];
 }
 
-function ShapeNode({ data, selected }: NodeProps<Node<ShapeNodeData>>) {
+function ShapeNode({ data, selected }: NodeProps<ShapeNodeType>) {
   const shapeType = data.shapeType;
-
   const nodeBorderColor = data.border || "#22d3ee";
 
-  const handleClassName = "!h-1 !w-1  !bg-slate-950 !opacity-80";
+  // This controls the small circles on shape line/handles.
+  const handleClassName =
+    "!h-[6px] !w-[6px] !rounded-full !border !border-white/70 !bg-slate-950 !opacity-90";
+
+  const resizerHandleClassName =
+    "!h-[6px] !w-[6px] !rounded-full !border !border-white/70 !bg-slate-950";
+
   const isDiamond = shapeType === "diamond";
-
   const isCircle = shapeType === "circle";
-
   const isDatabase = shapeType === "database";
-
   const isRounded = shapeType === "rounded" || shapeType === "service";
-
   const isTriangle = shapeType === "triangle";
-
   const isApi = shapeType === "api";
-
   const isQueue = shapeType === "queue";
-
   const isProcess = shapeType === "process";
+
   const handles = getHandleLayout(shapeType);
-  const showBoxResizer = ![""].includes(shapeType);
+  const showBoxResizer = true;
 
   return (
     <div className="relative h-full w-full">
@@ -155,9 +173,12 @@ function ShapeNode({ data, selected }: NodeProps<Node<ShapeNodeData>>) {
         isVisible={selected && showBoxResizer}
         minWidth={80}
         minHeight={50}
-        handleClassName={handleClassName}
+        handleClassName={resizerHandleClassName}
         lineClassName="!border"
-        handleStyle={{ borderColor: nodeBorderColor }}
+        handleStyle={{
+          borderColor: nodeBorderColor,
+          backgroundColor: "#020617",
+        }}
         lineStyle={{ borderColor: nodeBorderColor }}
       />
 
@@ -169,6 +190,7 @@ function ShapeNode({ data, selected }: NodeProps<Node<ShapeNodeData>>) {
           position={handle.position}
           className={handleClassName}
           style={{
+            ...handle.style,
             borderColor: nodeBorderColor,
           }}
         />
@@ -180,7 +202,11 @@ function ShapeNode({ data, selected }: NodeProps<Node<ShapeNodeData>>) {
           id={`source-${handle.id}`}
           type="source"
           position={handle.position}
-          className="!h-2 !w-2 !border-1 !border-[#fff]-200 !bg-slate-350"
+          className={handleClassName}
+          style={{
+            ...handle.style,
+            borderColor: nodeBorderColor,
+          }}
         />
       ))}
 
@@ -326,6 +352,10 @@ const nodeTypes = {
 };
 
 export function DiagramEditorPage() {
+  const [activities, setActivities] = useState<
+    Record<string, ActivityIndicator>
+  >({});
+
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [shapeBorderColor, setShapeBorderColor] = useState("#22d3ee");
   const [lineColor, setLineColor] = useState("#67e8f9");
@@ -340,12 +370,11 @@ export function DiagramEditorPage() {
 
   const [selectedColor, setSelectedColor] = useState<NodeColor>(NODE_COLORS[0]);
 
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
+  const [nodes, setNodes] = useState<FlowNode[]>([]);
+  const [edges, setEdges] = useState<FlowEdge[]>([]);
   const [flow, setFlow] = useState<ReactFlowInstance | null>(null);
 
   const [showVersions, setShowVersions] = useState(false);
-
   const [showBgPanel, setShowBgPanel] = useState(false);
   const [canvasBgColor, setCanvasBgColor] = useState("#020617");
   const [gridColor, setGridColor] = useState("#8b98a9");
@@ -355,8 +384,7 @@ export function DiagramEditorPage() {
     [canvasQuery.data, diagramID],
   );
 
-   const handleRealtimeMessage = useCallback(
-  (message: RealtimeMessage) => {
+  const handleRealtimeMessage = useCallback((message: RealtimeMessage) => {
     switch (message.type) {
       case "node_added": {
         const payload = message.payload as NodeAddedPayload | undefined;
@@ -365,7 +393,8 @@ export function DiagramEditorPage() {
         setNodes((current) => {
           const exists = current.some((node) => node.id === payload.node.id);
           if (exists) return current;
-          return [...current, payload.node];
+
+          return [...current, payload.node as FlowNode];
         });
 
         break;
@@ -377,17 +406,33 @@ export function DiagramEditorPage() {
 
         setNodes((current) =>
           current.map((node) => {
-            if (node.id !== payload.node_id) {
-              return node;
-            }
+            if (node.id !== payload.node_id) return node;
 
             return {
               ...node,
               position: payload.position ?? node.position,
-              data: payload.data ? { ...node.data, ...payload.data } : node.data,
-              style: payload.style ? { ...node.style, ...payload.style } : node.style,
+              data: payload.data
+                ? {
+                    ...node.data,
+                    ...payload.data,
+                  }
+                : node.data,
+              style: payload.style
+                ? {
+                    ...node.style,
+                    ...payload.style,
+                  }
+                : node.style,
+              width: payload.width ?? node.width,
+              height: payload.height ?? node.height,
+              measured: payload.measured
+                ? {
+                    ...node.measured,
+                    ...payload.measured,
+                  }
+                : node.measured,
             };
-          })
+          }),
         );
 
         break;
@@ -398,15 +443,15 @@ export function DiagramEditorPage() {
         if (!payload?.node_id) return;
 
         setNodes((current) =>
-          current.filter((node) => node.id !== payload.node_id)
+          current.filter((node) => node.id !== payload.node_id),
         );
 
         setEdges((current) =>
           current.filter(
             (edge) =>
               edge.source !== payload.node_id &&
-              edge.target !== payload.node_id
-          )
+              edge.target !== payload.node_id,
+          ),
         );
 
         break;
@@ -419,8 +464,39 @@ export function DiagramEditorPage() {
         setEdges((current) => {
           const exists = current.some((edge) => edge.id === payload.edge.id);
           if (exists) return current;
+
           return [...current, payload.edge];
         });
+
+        break;
+      }
+
+      case "edge_updated": {
+        const payload = message.payload as EdgeUpdatedPayload | undefined;
+        if (!payload?.edge_id) return;
+
+        setEdges((current) =>
+          current.map((edge) => {
+            if (edge.id !== payload.edge_id) return edge;
+
+            return {
+              ...edge,
+              data: payload.data
+                ? {
+                    ...edge.data,
+                    ...payload.data,
+                  }
+                : edge.data,
+              style: payload.style
+                ? {
+                    ...edge.style,
+                    ...payload.style,
+                  }
+                : edge.style,
+              animated: payload.animated ?? edge.animated,
+            };
+          }),
+        );
 
         break;
       }
@@ -430,7 +506,7 @@ export function DiagramEditorPage() {
         if (!payload?.edge_id) return;
 
         setEdges((current) =>
-          current.filter((edge) => edge.id !== payload.edge_id)
+          current.filter((edge) => edge.id !== payload.edge_id),
         );
 
         break;
@@ -446,20 +522,40 @@ export function DiagramEditorPage() {
         break;
       }
 
+      case "element_activity": {
+        const payload = message.payload as ElementActivityPayload | undefined;
+        if (!payload?.element_id) return;
+
+        const key = `${payload.element_type}:${payload.element_id}`;
+
+        setActivities((current) => ({
+          ...current,
+          [key]: {
+            elementID: payload.element_id,
+            elementType: payload.element_type,
+            userID: message.user_id,
+            userName: message.user_name || "User",
+            action: payload.action,
+            expiresAt: Date.now() + 2500,
+          },
+        }));
+
+        break;
+      }
+
       default:
         break;
     }
-  },
-  []
-);
+  }, []);
+
   const { isConnected, sendMessage } = useDiagramRealtime({
-  diagramID,
-  enabled: Boolean(diagramID),
-  onMessage: handleRealtimeMessage,
-});
+    diagramID,
+    enabled: Boolean(diagramID),
+    onMessage: handleRealtimeMessage,
+  });
 
   const createShapeNode = useCallback(
-    (shape: ShapeDefinition, index: number): Node => {
+    (shape: ShapeDefinition, index: number): FlowNode => {
       let width = 150;
       let height = 70;
 
@@ -477,6 +573,7 @@ export function DiagramEditorPage() {
         width = 160;
         height = 75;
       }
+
       if (shape.type === "triangle") {
         width = 130;
         height = 110;
@@ -519,52 +616,109 @@ export function DiagramEditorPage() {
     },
     [selectedColor, shapeBorderColor],
   );
- const onNodeDragStop: OnNodeDrag = useCallback(
-  (_, node) => {
-    sendMessage({
-      type: "node_updated",
-      user_id: 0,
-      payload: {
-        node_id: node.id,
-        position: node.position,
-      },
-    });
-  },
-  [sendMessage]
-);
-  const addShape = useCallback(
-  (shape: ShapeDefinition) => {
-    setNodes((current) => {
-      const newNode = createShapeNode(shape, current.length);
 
+  const onNodeDragStop: OnNodeDrag<FlowNode> = useCallback(
+    (_, node) => {
       sendMessage({
-        type: "node_added",
+        type: "node_updated",
         user_id: 0,
         payload: {
-          node: newNode,
+          node_id: node.id,
+          position: node.position,
+          data: node.data,
+          style: node.style ?? {},
+          width: node.width,
+          height: node.height,
+          measured: node.measured,
         },
       });
 
-      return [...current, newNode];
-    });
+      sendMessage({
+        type: "element_activity",
+        user_id: 0,
+        payload: {
+          element_id: node.id,
+          element_type: "node",
+          action: "moving",
+        },
+      });
+    },
+    [sendMessage],
+  );
 
-    setDirty(true);
-  },
-  [createShapeNode, sendMessage, setDirty]
-);
+  const addShape = useCallback(
+    (shape: ShapeDefinition) => {
+      setNodes((current) => {
+        const newNode = createShapeNode(shape, current.length);
 
- 
+        sendMessage({
+          type: "node_added",
+          user_id: 0,
+          payload: {
+            node: newNode,
+          },
+        });
 
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      setNodes((current) => applyNodeChanges(changes, current));
+        return [...current, newNode];
+      });
+
       setDirty(true);
     },
-    [setDirty],
+    [createShapeNode, sendMessage, setDirty],
+  );
+
+  const onNodesChange = useCallback(
+    (changes: NodeChange<FlowNode>[]) => {
+      setNodes((currentNodes) => {
+        const updatedNodes = applyNodeChanges(
+          changes,
+          currentNodes,
+        ) as FlowNode[];
+
+        changes.forEach((change) => {
+          if (change.type !== "dimensions") return;
+
+          const updatedNode = updatedNodes.find(
+            (node) => node.id === change.id,
+          );
+
+          if (!updatedNode) return;
+
+          sendMessage({
+            type: "node_updated",
+            user_id: 0,
+            payload: {
+              node_id: updatedNode.id,
+              position: updatedNode.position,
+              data: updatedNode.data,
+              style: updatedNode.style ?? {},
+              width: updatedNode.width,
+              height: updatedNode.height,
+              measured: updatedNode.measured,
+            },
+          });
+
+          sendMessage({
+            type: "element_activity",
+            user_id: 0,
+            payload: {
+              element_id: updatedNode.id,
+              element_type: "node",
+              action: "editing",
+            },
+          });
+        });
+
+        return updatedNodes;
+      });
+
+      setDirty(true);
+    },
+    [sendMessage, setDirty],
   );
 
   const onEdgesChange = useCallback(
-    (changes: any[]) => {
+    (changes: EdgeChange[]) => {
       setEdges((current) => {
         const updatedEdges = applyEdgeChanges(changes, current);
 
@@ -594,83 +748,95 @@ export function DiagramEditorPage() {
     [setDirty, lineColor],
   );
 
- const onConnect = useCallback(
-  (connection: Connection) => {
-    const newEdge: Edge = {
-      ...connection,
-      id: `edge_${Date.now()}`,
-      type: "smoothstep",
-      animated: false,
-      source: connection.source!,
-      target: connection.target!,
-    };
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      const newEdge: FlowEdge = {
+        ...connection,
+        id: `edge_${Date.now()}`,
+        type: "smoothstep",
+        animated: false,
+        source: connection.source!,
+        target: connection.target!,
+        style: {
+          stroke: lineColor,
+          strokeWidth: 2,
+        },
+      };
 
-    setEdges((current) => addEdge(newEdge, current));
+      setEdges((current) => addEdge(newEdge, current));
 
-    sendMessage({
-      type: "edge_added",
-      user_id: 0,
-      payload: {
-        edge: newEdge,
-      },
-    });
-
-    setDirty(true);
-  },
-  [sendMessage, setDirty]
-);
-
-
-  const handleColorChange = useCallback(
-  (color: NodeColor) => {
-    setSelectedColor(color);
-
-    const selectedNodeIDs = nodes
-      .filter((node) => node.selected)
-      .map((node) => node.id);
-
-    if (selectedNodeIDs.length === 0) {
-      return;
-    }
-
-    const style = {
-      background: color.bg,
-      backgroundColor: color.bg,
-      border: `1px solid ${color.border}`,
-      color: color.text,
-    };
-
-    setNodes((current) =>
-      current.map((node) => {
-        if (!selectedNodeIDs.includes(node.id)) {
-          return node;
-        }
-
-        return {
-          ...node,
-          style: {
-            ...node.style,
-            ...style,
-          },
-        };
-      })
-    );
-
-    selectedNodeIDs.forEach((nodeID) => {
       sendMessage({
-        type: "node_updated",
+        type: "edge_added",
         user_id: 0,
         payload: {
-          node_id: nodeID,
-          style,
+          edge: newEdge,
         },
       });
-    });
 
-    setDirty(true);
-  },
-  [nodes, sendMessage, setDirty]
-);
+      setDirty(true);
+    },
+    [sendMessage, setDirty, lineColor],
+  );
+
+  const handleColorChange = useCallback(
+    (color: NodeColor) => {
+      setSelectedColor(color);
+
+      const selectedNodeIDs = nodes
+        .filter((node) => node.selected)
+        .map((node) => node.id);
+
+      if (selectedNodeIDs.length === 0) return;
+
+      setNodes((current) =>
+        current.map((node) => {
+          if (!selectedNodeIDs.includes(node.id)) return node;
+
+          const updatedData: ShapeNodeData = {
+            ...node.data,
+            bg: color.bg,
+            border: color.border,
+            text: color.text,
+          };
+
+          const updatedNode: FlowNode = {
+            ...node,
+            data: updatedData,
+          };
+
+          sendMessage({
+            type: "node_updated",
+            user_id: 0,
+            payload: {
+              node_id: updatedNode.id,
+              data: updatedNode.data,
+              position: updatedNode.position,
+              style: updatedNode.style ?? {},
+              width: updatedNode.width,
+              height: updatedNode.height,
+              measured: updatedNode.measured,
+            },
+          });
+
+          sendMessage({
+            type: "element_activity",
+            user_id: 0,
+            payload: {
+              element_id: updatedNode.id,
+              element_type: "node",
+              action: "color_changed",
+            },
+          });
+
+          return updatedNode;
+        }),
+      );
+
+      setShapeBorderColor(color.border);
+      setDirty(true);
+    },
+    [nodes, sendMessage, setDirty],
+  );
 
   const handleLineColorChange = useCallback(
     (color: string) => {
@@ -680,30 +846,50 @@ export function DiagramEditorPage() {
         .filter((edge) => edge.selected)
         .map((edge) => edge.id);
 
-      if (selectedEdgeIDs.length === 0) {
-        return;
-      }
+      if (selectedEdgeIDs.length === 0) return;
 
       setEdges((current) =>
         current.map((edge) => {
-          if (!selectedEdgeIDs.includes(edge.id)) {
-            return edge;
-          }
+          if (!selectedEdgeIDs.includes(edge.id)) return edge;
 
-          return {
+          const updatedEdge: FlowEdge = {
             ...edge,
             style: {
               ...edge.style,
               stroke: color,
               strokeWidth: 2,
+              filter: undefined,
             },
           };
+
+          sendMessage({
+            type: "edge_updated",
+            user_id: 0,
+            payload: {
+              edge_id: updatedEdge.id,
+              style: updatedEdge.style ?? {},
+              data: updatedEdge.data ?? {},
+              animated: updatedEdge.animated ?? false,
+            },
+          });
+
+          sendMessage({
+            type: "element_activity",
+            user_id: 0,
+            payload: {
+              element_id: updatedEdge.id,
+              element_type: "edge",
+              action: "color_changed",
+            },
+          });
+
+          return updatedEdge;
         }),
       );
 
       setDirty(true);
     },
-    [edges, setDirty],
+    [edges, sendMessage, setDirty],
   );
 
   const handleShapeBorderColorChange = useCallback(
@@ -714,30 +900,55 @@ export function DiagramEditorPage() {
         .filter((node) => node.selected)
         .map((node) => node.id);
 
-      if (selectedNodeIDs.length === 0) {
-        return;
-      }
+      if (selectedNodeIDs.length === 0) return;
 
       setNodes((current) =>
         current.map((node) => {
-          if (!selectedNodeIDs.includes(node.id)) {
-            return node;
-          }
+          if (!selectedNodeIDs.includes(node.id)) return node;
 
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              border: color,
-            },
+          const updatedData: ShapeNodeData = {
+            ...node.data,
+            border: color,
           };
+
+          const updatedNode: FlowNode = {
+            ...node,
+            data: updatedData,
+          };
+
+          sendMessage({
+            type: "node_updated",
+            user_id: 0,
+            payload: {
+              node_id: updatedNode.id,
+              data: updatedNode.data,
+              position: updatedNode.position,
+              style: updatedNode.style ?? {},
+              width: updatedNode.width,
+              height: updatedNode.height,
+              measured: updatedNode.measured,
+            },
+          });
+
+          sendMessage({
+            type: "element_activity",
+            user_id: 0,
+            payload: {
+              element_id: updatedNode.id,
+              element_type: "node",
+              action: "color_changed",
+            },
+          });
+
+          return updatedNode;
         }),
       );
 
       setDirty(true);
     },
-    [nodes, setDirty],
+    [nodes, sendMessage, setDirty],
   );
+
   const handleSave = useCallback(() => {
     const viewport = flow?.getViewport() ??
       canvasQuery.data?.viewport ?? {
@@ -757,7 +968,6 @@ export function DiagramEditorPage() {
           data: node.data as Record<string, unknown>,
           style: node.style as Record<string, unknown>,
         })),
-
         edges: edges.map((edge) => ({
           id: edge.id,
           source: edge.source,
@@ -769,7 +979,6 @@ export function DiagramEditorPage() {
           data: edge.data as Record<string, unknown>,
           style: edge.style as Record<string, unknown>,
         })),
-
         viewport,
         change_note: "Saved from editor",
       },
@@ -778,53 +987,71 @@ export function DiagramEditorPage() {
       },
     );
   }, [canvasQuery.data?.viewport, edges, flow, nodes, saveCanvas, setDirty]);
- 
 
   const deleteSelected = useCallback(() => {
-  const selectedNodeIDs = nodes
-    .filter((node) => node.selected)
-    .map((node) => node.id);
+    const selectedNodeIDs = nodes
+      .filter((node) => node.selected)
+      .map((node) => node.id);
 
-  const selectedEdgeIDs = edges
-    .filter((edge) => edge.selected)
-    .map((edge) => edge.id);
+    const selectedEdgeIDs = edges
+      .filter((edge) => edge.selected)
+      .map((edge) => edge.id);
 
-  setNodes((current) =>
-    current.filter((node) => !selectedNodeIDs.includes(node.id))
-  );
+    setNodes((current) =>
+      current.filter((node) => !selectedNodeIDs.includes(node.id)),
+    );
 
-  setEdges((current) =>
-    current.filter(
-      (edge) =>
-        !selectedEdgeIDs.includes(edge.id) &&
-        !selectedNodeIDs.includes(edge.source) &&
-        !selectedNodeIDs.includes(edge.target)
-    )
-  );
+    setEdges((current) =>
+      current.filter(
+        (edge) =>
+          !selectedEdgeIDs.includes(edge.id) &&
+          !selectedNodeIDs.includes(edge.source) &&
+          !selectedNodeIDs.includes(edge.target),
+      ),
+    );
 
-  selectedNodeIDs.forEach((nodeID) => {
-    sendMessage({
-      type: "node_deleted",
-      user_id: 0,
-      payload: {
-        node_id: nodeID,
-      },
+    selectedNodeIDs.forEach((nodeID) => {
+      sendMessage({
+        type: "node_deleted",
+        user_id: 0,
+        payload: {
+          node_id: nodeID,
+        },
+      });
+
+      sendMessage({
+        type: "element_activity",
+        user_id: 0,
+        payload: {
+          element_id: nodeID,
+          element_type: "node",
+          action: "deleted",
+        },
+      });
     });
-  });
 
-  selectedEdgeIDs.forEach((edgeID) => {
-    sendMessage({
-      type: "edge_deleted",
-      user_id: 0,
-      payload: {
-        edge_id: edgeID,
-      },
+    selectedEdgeIDs.forEach((edgeID) => {
+      sendMessage({
+        type: "edge_deleted",
+        user_id: 0,
+        payload: {
+          edge_id: edgeID,
+        },
+      });
+
+      sendMessage({
+        type: "element_activity",
+        user_id: 0,
+        payload: {
+          element_id: edgeID,
+          element_type: "edge",
+          action: "deleted",
+        },
+      });
     });
-  });
 
-  setDirty(true);
-}, [edges, nodes, sendMessage, setDirty]);
-
+    setDirty(true);
+  }, [edges, nodes, sendMessage, setDirty]);
 
   useEffect(() => {
     setCurrentDiagramID(diagramID);
@@ -834,7 +1061,7 @@ export function DiagramEditorPage() {
     if (!canvasQuery.data) return;
 
     setNodes(
-      canvasQuery.data.nodes.map((node) => {
+      canvasQuery.data.nodes.map((node): FlowNode => {
         const nodeData = node.data as Record<string, unknown> | undefined;
         const nodeStyle = node.style as React.CSSProperties | undefined;
 
@@ -848,7 +1075,6 @@ export function DiagramEditorPage() {
           data: {
             label: String(nodeData?.label ?? node.id),
             shapeType: String(nodeData?.shapeType ?? "rectangle"),
-
             bg: String(
               nodeData?.bg ??
                 nodeStyle?.backgroundColor ??
@@ -869,7 +1095,7 @@ export function DiagramEditorPage() {
     );
 
     setEdges(
-      canvasQuery.data.edges.map((edge) => ({
+      canvasQuery.data.edges.map((edge): FlowEdge => ({
         id: edge.id,
         source: edge.source,
         target: edge.target,
@@ -931,6 +1157,26 @@ export function DiagramEditorPage() {
     };
   }, [flow, deleteSelected]);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const now = Date.now();
+
+      setActivities((current) => {
+        const next: Record<string, ActivityIndicator> = {};
+
+        Object.entries(current).forEach(([key, value]) => {
+          if (value.expiresAt > now) {
+            next[key] = value;
+          }
+        });
+
+        return next;
+      });
+    }, 700);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
   if (canvasQuery.isLoading) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center text-sm text-muted-foreground">
@@ -946,7 +1192,6 @@ export function DiagramEditorPage() {
       </div>
     );
   }
-  
 
   return (
     <>
@@ -968,15 +1213,16 @@ export function DiagramEditorPage() {
                   {isDirty ? " · Unsaved changes" : " · Saved"}
                 </p>
               </div>
+
               <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-800 px-3 py-1 text-xs text-slate-300">
-  <span
-    className={[
-      "h-2 w-2 rounded-full",
-      isConnected ? "bg-emerald-400" : "bg-red-400",
-    ].join(" ")}
-  />
-  {isConnected ? "Live" : "Offline"}
-</div>
+                <span
+                  className={[
+                    "h-2 w-2 rounded-full",
+                    isConnected ? "bg-emerald-400" : "bg-red-400",
+                  ].join(" ")}
+                />
+                {isConnected ? "Live" : "Offline"}
+              </div>
             </div>
 
             <div className="relative flex items-center gap-2">
@@ -1002,6 +1248,7 @@ export function DiagramEditorPage() {
                 <Palette className="mr-2 h-4 w-4" />
                 Background
               </Button>
+
               <Button
                 size="sm"
                 variant="outline"
@@ -1011,6 +1258,7 @@ export function DiagramEditorPage() {
                 <Share2 className="mr-2 h-4 w-4" />
                 Collaborate
               </Button>
+
               <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800 px-3 py-2">
                 <span className="text-xs text-slate-300">Border</span>
 
@@ -1203,21 +1451,29 @@ export function DiagramEditorPage() {
               );
             }}
             onNodeClick={(_, node) => {
-              setSelectedElementID(node.id);
+              const flowNode = node as FlowNode;
+
+              setSelectedElementID(flowNode.id);
               setShowBgPanel(false);
 
-              const data = node.data as Record<string, string>;
+              setSelectedColor({
+                name: "Custom",
+                bg: flowNode.data.bg,
+                border: flowNode.data.border,
+                text: flowNode.data.text,
+              });
 
-              if (data.bg && data.border && data.text) {
-                setSelectedColor({
-                  name: "Custom",
-                  bg: data.bg,
-                  border: data.border,
-                  text: data.text,
-                });
+              setShapeBorderColor(flowNode.data.border);
 
-                setShapeBorderColor(data.border);
-              }
+              sendMessage({
+                type: "element_activity",
+                user_id: 0,
+                payload: {
+                  element_id: flowNode.id,
+                  element_type: "node",
+                  action: "selected",
+                },
+              });
             }}
             onEdgeClick={(_, edge) => {
               setSelectedElementID(edge.id);
@@ -1228,13 +1484,22 @@ export function DiagramEditorPage() {
               if (typeof stroke === "string") {
                 setLineColor(stroke);
               }
+
+              sendMessage({
+                type: "element_activity",
+                user_id: 0,
+                payload: {
+                  element_id: edge.id,
+                  element_type: "edge",
+                  action: "selected",
+                },
+              });
             }}
             fitView
             className="h-full w-full"
             style={{
               backgroundColor: canvasBgColor,
             }}
-            
           >
             <Background color={gridColor} gap={24} />
 
@@ -1248,6 +1513,8 @@ export function DiagramEditorPage() {
                 backgroundColor: "ButtonShadow",
               }}
             />
+
+            <ActivityLabels nodes={nodes} activities={activities} />
           </ReactFlow>
 
           {showVersions && (
@@ -1280,6 +1547,7 @@ export function DiagramEditorPage() {
           )}
         </div>
       </div>
+
       <CollaborateDialog
         open={showCollaborators}
         onOpenChange={setShowCollaborators}
@@ -1287,4 +1555,54 @@ export function DiagramEditorPage() {
       />
     </>
   );
+}
+
+function ActivityLabels({
+  nodes,
+  activities,
+}: {
+  nodes: FlowNode[];
+  activities: Record<string, ActivityIndicator>;
+}) {
+  return (
+    <ViewportPortal>
+      {Object.values(activities)
+        .filter((activity) => activity.elementType === "node")
+        .map((activity) => {
+          const node = nodes.find((item) => item.id === activity.elementID);
+          if (!node) return null;
+
+          return (
+            <div
+              key={`${activity.elementType}:${activity.elementID}:${activity.userID}`}
+              className="nodrag nopan pointer-events-none absolute rounded-md border border-emerald-300/60 bg-emerald-100 px-2 py-0.5 text-[10px] font-medium leading-4 text-emerald-900 shadow-sm"
+              style={{
+                transform: `translate(${node.position.x}px, ${
+                  node.position.y - 26
+                }px)`,
+              }}
+            >
+              {activity.userName} {formatActivityAction(activity.action)}
+            </div>
+          );
+        })}
+    </ViewportPortal>
+  );
+}
+
+function formatActivityAction(action: string) {
+  switch (action) {
+    case "selected":
+      return "selected";
+    case "moving":
+      return "is moving";
+    case "editing":
+      return "is editing";
+    case "color_changed":
+      return "changed color";
+    case "deleted":
+      return "deleted";
+    default:
+      return "is editing";
+  }
 }

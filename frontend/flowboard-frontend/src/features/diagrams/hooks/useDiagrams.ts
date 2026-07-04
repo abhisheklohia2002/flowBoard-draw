@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { createDiagram, getCanvas, listProjectDiagrams, listVersions, restoreVersion, saveCanvas } from "../api/diagrams.api";
+import { createDiagram, getCanvas, getSharedWithMeApi, listProjectDiagrams, listVersions, restoreVersion, saveCanvas } from "../api/diagrams.api";
 import type { SaveCanvasRequest } from "@/types/diagram";
 
 export const diagramKeys = {
   byProject: (projectID: number) => ["projects", projectID, "diagrams"] as const,
   canvas: (diagramID: number) => ["diagrams", diagramID, "canvas"] as const,
   versions: (diagramID: number) => ["diagrams", diagramID, "versions"] as const,
+  sharedWithMe: ["diagrams", "shared-with-me"] as const,
 };
 
 export function useProjectDiagrams(projectID: number) {
@@ -75,5 +76,13 @@ export function useRestoreVersion(diagramID: number) {
       toast.success("Version restored");
     },
     onError: (error) => toast.error(error.message),
+  });
+}
+
+
+export function useSharedWithMe() {
+  return useQuery({
+    queryKey: diagramKeys.sharedWithMe,
+    queryFn: getSharedWithMeApi,
   });
 }

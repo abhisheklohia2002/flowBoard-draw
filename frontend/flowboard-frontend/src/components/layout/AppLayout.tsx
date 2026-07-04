@@ -15,10 +15,15 @@ import { useLogout } from "@/features/auth/hooks/useAuth";
 import { getMe } from "@/features/auth/api/auth.api";
 import { useEffect, useState } from "react";
 import { User } from "@/types/auth";
+import { useNotificationStream } from "@/features/notification/hooks/useNotificationStream";
+import { NotificationBell } from "../NotificationBell/NotificationBell";
 
 export  function AppLayout() {
   const { sidebarCollapsed, toggleSidebar } = useAppStore();
   const logout = useLogout();
+
+
+   useNotificationStream();
  
    const navigate = useNavigate();
 
@@ -32,7 +37,7 @@ useEffect(() => {
       } catch (error) {
         console.error("Failed to fetch user", error);
 
-        navigate("/login", { replace: true });
+        navigate("/", { replace: true });
       } finally {
         setIsMeLoading(false);
       }
@@ -140,6 +145,10 @@ useEffect(() => {
   </div>
 
   <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-900/70 px-3 py-2">
+        
+         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
+      <NotificationBell className="h-5 w-5" />
+    </div>
     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
       <UserCircle className="h-5 w-5" />
     </div>

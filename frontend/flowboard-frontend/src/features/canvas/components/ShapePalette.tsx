@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, Shapes, Workflow } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Shapes, Workflow } from "lucide-react";
 import { SHAPES, type ShapeDefinition } from "../config/shapes";
 
 import { Button } from "@/components/ui/button";
@@ -113,6 +113,7 @@ export function ShapePalette({
   onAddShape,
 }: ShapePaletteProps) {
   const [search, setSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(true);
 
   const filteredShapes = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -142,12 +143,37 @@ export function ShapePalette({
     );
   }, [filteredShapes]);
 
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="absolute left-4 top-28 z-20 flex h-12 items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/95 px-3 text-sm font-medium text-slate-200 shadow-2xl backdrop-blur transition hover:bg-slate-800 hover:text-white"
+        title="Open shape library"
+      >
+        <Shapes className="h-5 w-5 text-cyan-300" />
+        <ChevronRight className="h-4 w-4 text-slate-400" />
+      </button>
+    );
+  }
+
   return (
     <div className="absolute left-4 top-28 z-20 flex max-h-[calc(100vh-10rem)] w-64 flex-col rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur">
       <div className="border-b border-white/10 p-3">
-        <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-          <Shapes className="h-4 w-4" />
-          Shape Library
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+            <Shapes className="h-4 w-4" />
+            Shape Library
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-800 hover:text-white"
+            title="Close shape library"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="relative">
