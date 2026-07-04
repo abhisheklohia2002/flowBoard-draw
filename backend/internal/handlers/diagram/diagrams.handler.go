@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	dto "flowBoard/draw/internal/DTO"
+	"flowBoard/draw/internal/helpers"
+	collabservice "flowBoard/draw/internal/services/collaboration"
 	services "flowBoard/draw/internal/services/diagrams"
 
 	"github.com/gin-gonic/gin"
@@ -23,11 +25,12 @@ type DiagramHandler interface {
 }
 
 type DiagramHandlerImpl struct {
-	service services.DiagramService
+	service              services.DiagramService
+	collaborationService collabservice.CollaborationService
 }
 
-func NewDiagramHandler(service services.DiagramService) DiagramHandler {
-	return &DiagramHandlerImpl{service: service}
+func NewDiagramHandler(service services.DiagramService, collaborationService collabservice.CollaborationService) DiagramHandler {
+	return &DiagramHandlerImpl{service: service, collaborationService: collaborationService}
 }
 
 func (h *DiagramHandlerImpl) CreateDiagram(c *gin.Context) {
@@ -156,7 +159,14 @@ func (h *DiagramHandlerImpl) DeleteDiagram(c *gin.Context) {
 }
 
 func (h *DiagramHandlerImpl) SaveCanvas(c *gin.Context) {
-	diagramID, err := strconv.ParseUint(c.Param("diagramID"), 10, 64)
+	userID, ok := helpers.RequireUserID(c)
+	if !ok {
+		return
+	}
+
+	diagramIDParam := c.Param("diagramID")
+
+	diagramID, err := strconv.ParseUint(diagramIDParam, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "invalid diagram id",
@@ -164,8 +174,23 @@ func (h *DiagramHandlerImpl) SaveCanvas(c *gin.Context) {
 		return
 	}
 
-	var req dto.SaveCanvasRequest
+	canEdit, err := h.collaborationService.CanEditDiagram(userID, uint(diagramID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to check edit permission",
+			"error":   err.Error(),
+		})
+		return
+	}
 
+	if !canEdit {
+		c.JSON(http.StatusForbidden, gin.H{
+			"message": "you do not have edit permission for this diagram",
+		})
+		return
+	}
+
+	var req dto.SaveCanvasRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "invalid request body",
@@ -174,22 +199,7 @@ func (h *DiagramHandlerImpl) SaveCanvas(c *gin.Context) {
 		return
 	}
 
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"message": "user not found in context",
-		})
-		return
-	}
-	userID, ok := userIDValue.(uint)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"message": "invalid user id in context",
-		})
-		return
-	}
-
-	response, err := h.service.SaveCanvas(uint(diagramID), userID, req)
+	res, err := h.service.SaveCanvas(uint(diagramID), userID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to save canvas",
@@ -200,11 +210,15 @@ func (h *DiagramHandlerImpl) SaveCanvas(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "canvas saved successfully",
-		"data":    response,
+		"data":    res,
 	})
 }
 
 func (h *DiagramHandlerImpl) GetCanvas(c *gin.Context) {
+	userID, ok := helpers.RequireUserID(c)
+	if !ok {
+		return
+	}
 	diagramID, err := strconv.ParseUint(c.Param("diagramID"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -213,6 +227,21 @@ func (h *DiagramHandlerImpl) GetCanvas(c *gin.Context) {
 		return
 	}
 
+	canAccess, err := h.collaborationService.CanAccessDiagram(userID, uint(diagramID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to check diagram access",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if !canAccess {
+		c.JSON(http.StatusForbidden, gin.H{
+			"message": "you do not have access to this diagram",
+		})
+		return
+	}
 	canvas, err := h.service.GetCanvas(uint(diagramID))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -229,10 +258,31 @@ func (h *DiagramHandlerImpl) GetCanvas(c *gin.Context) {
 }
 
 func (h *DiagramHandlerImpl) GetVersions(c *gin.Context) {
+	userID, ok := helpers.RequireUserID(c)
+	if !ok {
+		return
+	}
+
 	diagramID, err := strconv.ParseUint(c.Param("diagramID"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "invalid diagram id",
+		})
+		return
+	}
+
+	canAccess, err := h.collaborationService.CanAccessDiagram(userID, uint(diagramID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to check diagram access",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	if !canAccess {
+		c.JSON(http.StatusForbidden, gin.H{
+			"message": "you do not have access to this diagram",
 		})
 		return
 	}
@@ -253,6 +303,11 @@ func (h *DiagramHandlerImpl) GetVersions(c *gin.Context) {
 }
 
 func (h *DiagramHandlerImpl) RestoreVersion(c *gin.Context) {
+	userID, ok := helpers.RequireUserID(c)
+	if !ok {
+		return
+	}
+
 	diagramID, err := strconv.ParseUint(c.Param("diagramID"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -269,26 +324,23 @@ func (h *DiagramHandlerImpl) RestoreVersion(c *gin.Context) {
 		return
 	}
 
-	userIDValue, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"message": "user not found in context",
-		})
-		return
-	}
-	userID, ok := userIDValue.(uint)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"message": "invalid user id in context",
+	canEdit, err := h.collaborationService.CanEditDiagram(userID, uint(diagramID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to check edit permission",
+			"error":   err.Error(),
 		})
 		return
 	}
 
-	response, err := h.service.RestoreVersion(
-		uint(diagramID),
-		uint(versionID),
-		userID,
-	)
+	if !canEdit {
+		c.JSON(http.StatusForbidden, gin.H{
+			"message": "you do not have edit permission for this diagram",
+		})
+		return
+	}
+
+	res, err := h.service.RestoreVersion(uint(diagramID), uint(versionID), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to restore version",
@@ -299,6 +351,6 @@ func (h *DiagramHandlerImpl) RestoreVersion(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "version restored successfully",
-		"data":    response,
+		"data":    res,
 	})
 }

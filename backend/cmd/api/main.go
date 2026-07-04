@@ -108,12 +108,13 @@ func main() {
 	userHandler := userHandler.NewUserHandler(userService)
 
 	diagramRepo := diagramRepositories.NewDiagramRepository(db)
-	diagramService := diagramServices.NewDiagramService(diagramRepo)
-	diagramHandler := handlers.NewDiagramHandler(diagramService)
-
 	collaborationRepo := collaborationRepo.NewCollaborationRepository(db)
 	collaborationServices := collaborationServices.NewCollaborationService(userRepository, diagramRepo, collaborationRepo)
 	collaborationHandler := collaborationHandler.NewCollaborationHandler(collaborationServices)
+
+	diagramService := diagramServices.NewDiagramService(diagramRepo)
+	diagramHandler := handlers.NewDiagramHandler(diagramService, collaborationServices)
+
 	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler)
 
 	r.Run(":" + "8080")
