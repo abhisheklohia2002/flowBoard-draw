@@ -12,6 +12,7 @@ type UserRepository interface {
 	Create(user *models.User) (*models.User, error)
 	FindByEmail(email string) (*models.User, error)
 	FindByID(id uint) (*models.User, error)
+	SearchUsers(query string, excludeUserID uint) ([]models.User, error)
 }
 
 type UserRepositoryImpl struct {
@@ -60,4 +61,18 @@ func (r *UserRepositoryImpl) FindByID(id uint) (*models.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) SearchUsers(query string, excludeUserID uint) ([]models.User, error) {
+	var users []models.User
+
+	search := "%" + query + "%"
+
+	err := r.db.
+		Where("id <> ? AND (LOWER(full_name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?))", excludeUserID, search, search).
+		Limit(10).
+		Find(&users).
+		Error
+
+	return users, err
 }
