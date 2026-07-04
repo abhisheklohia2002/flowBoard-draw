@@ -19,6 +19,7 @@ type DiagramRepository interface {
 	FindVersionsByDiagramID(diagramID uint) ([]models.DiagramVersion, error)
 	FindVersionByID(diagramID uint, versionID uint) (*models.DiagramVersion, error)
 	SaveCanvas(diagramID uint, userID uint, nodes []models.Node, edges []models.Edge, viewport dto.CanvasViewport, snapshot datatypes.JSON, changeNote string) (uint, error)
+	IsDiagramOwner(diagramID uint, userID uint) (bool, error)
 }
 
 type DiagramRepositoryImpl struct {
@@ -199,4 +200,17 @@ func (r *DiagramRepositoryImpl) FindVersionByID(
 	}
 
 	return &version, nil
+}
+
+func (r *DiagramRepositoryImpl) IsDiagramOwner(diagramID uint, userID uint) (bool, error) {
+	var count int64
+
+	err := r.db.
+		Table("diagrams").
+		Joins("JOIN projects ON projects.id = diagrams.project_id").
+		Where("diagrams.id = ? AND projects.user_id = ?", diagramID, userID).
+		Count(&count).
+		Error
+
+	return count > 0, err
 }
