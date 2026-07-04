@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"flowBoard/draw/internal/models"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -11,7 +10,8 @@ type NotificationRepository interface {
 	Create(notification *models.Notification) error
 	FindByUserID(userID uint) ([]models.Notification, error)
 	MarkAsRead(notificationID uint, userID uint) error
-	CountUnread(userID uint) (int64, error)
+	MarkAllAsRead(userID uint) error
+	UnreadCount(userID uint) (int64, error)
 }
 
 type NotificationRepositoryImpl struct {
@@ -30,7 +30,6 @@ func (r *NotificationRepositoryImpl) FindByUserID(userID uint) ([]models.Notific
 	var notifications []models.Notification
 
 	err := r.db.
-		Preload("Actor").
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Limit(50).
@@ -41,21 +40,27 @@ func (r *NotificationRepositoryImpl) FindByUserID(userID uint) ([]models.Notific
 }
 
 func (r *NotificationRepositoryImpl) MarkAsRead(notificationID uint, userID uint) error {
-	now := time.Now()
-
 	return r.db.
 		Model(&models.Notification{}).
 		Where("id = ? AND user_id = ?", notificationID, userID).
-		Update("read_at", &now).
+		Update("is_read", true).
 		Error
 }
 
-func (r *NotificationRepositoryImpl) CountUnread(userID uint) (int64, error) {
+func (r *NotificationRepositoryImpl) MarkAllAsRead(userID uint) error {
+	return r.db.
+		Model(&models.Notification{}).
+		Where("user_id = ? AND is_read = false", userID).
+		Update("is_read", true).
+		Error
+}
+
+func (r *NotificationRepositoryImpl) UnreadCount(userID uint) (int64, error) {
 	var count int64
 
 	err := r.db.
 		Model(&models.Notification{}).
-		Where("user_id = ? AND read_at IS NULL", userID).
+		Where("user_id = ? AND is_read = false", userID).
 		Count(&count).
 		Error
 
