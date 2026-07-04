@@ -8,7 +8,7 @@ type DiagramCollaborator struct {
 	DiagramID uint `json:"diagram_id" gorm:"not null;index;uniqueIndex:idx_diagram_user"`
 	UserID    uint `json:"user_id" gorm:"not null;index;uniqueIndex:idx_diagram_user"`
 
-	Role string `json:"role" gorm:"not null;default:editor"`
+	Role string `json:"role" gorm:"not null;default:editor"` // allowed: editor, viewer
 
 	InvitedByID uint `json:"invited_by_id" gorm:"not null"`
 
