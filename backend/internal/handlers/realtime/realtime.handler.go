@@ -6,6 +6,7 @@ import (
 
 	"flowBoard/draw/internal/helpers"
 	"flowBoard/draw/internal/realtime"
+	userrepo "flowBoard/draw/internal/repository/users"
 	collabservice "flowBoard/draw/internal/services/collaboration"
 
 	"github.com/gin-gonic/gin"
@@ -15,15 +16,18 @@ import (
 type RealtimeHandler struct {
 	hub                  *realtime.Hub
 	collaborationService collabservice.CollaborationService
+	userRepo             userrepo.UserRepository
 }
 
 func NewRealtimeHandler(
 	hub *realtime.Hub,
 	collaborationService collabservice.CollaborationService,
+	userRepo userrepo.UserRepository,
 ) *RealtimeHandler {
 	return &RealtimeHandler{
 		hub:                  hub,
 		collaborationService: collaborationService,
+		userRepo:             userRepo,
 	}
 }
 
@@ -39,10 +43,11 @@ func (h *RealtimeHandler) HandleDiagramWS(c *gin.Context) {
 		return
 	}
 
-	userNameValue, _ := c.Get("full_name")
-	userName, _ := userNameValue.(string)
-	if userName == "" {
-		userName = "User"
+	userName := "User"
+
+	user, err := h.userRepo.FindByID(userID)
+	if err == nil && user != nil && user.FullName != "" {
+		userName = user.FullName
 	}
 
 	diagramIDParam := c.Param("diagramID")

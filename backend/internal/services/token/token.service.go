@@ -26,6 +26,7 @@ type CustomClaims struct {
 	UserID    uint   `json:"user_id"`
 	Email     string `json:"email"`
 	Role      string `json:"role"`
+	FullName  string `json:"full_name"`
 	TokenType string `json:"token_type"`
 	jwt.RegisteredClaims
 }

@@ -25,3 +25,19 @@ type DiagramResponse struct {
 	PanX             float64        `json:"pan_x"`
 	PanY             float64        `json:"pan_y"`
 }
+
+type SharedDiagramResponse struct {
+	ID          uint   `json:"id"`
+	ProjectID   uint   `json:"project_id"`
+	ProjectName string `json:"project_name"`
+	Name        string `json:"name"`
+
+	OwnerID    uint   `json:"owner_id"`
+	OwnerName  string `json:"owner_name"`
+	OwnerEmail string `json:"owner_email"`
+
+	CollaboratorRole string `json:"collaborator_role"`
+
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}

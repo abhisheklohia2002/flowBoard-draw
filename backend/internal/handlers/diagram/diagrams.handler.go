@@ -22,6 +22,7 @@ type DiagramHandler interface {
 	GetCanvas(c *gin.Context)
 	GetVersions(c *gin.Context)
 	RestoreVersion(c *gin.Context)
+	GetSharedWithMe(c *gin.Context)
 }
 
 type DiagramHandlerImpl struct {
@@ -352,5 +353,26 @@ func (h *DiagramHandlerImpl) RestoreVersion(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "version restored successfully",
 		"data":    res,
+	})
+}
+
+func (h *DiagramHandlerImpl) GetSharedWithMe(c *gin.Context) {
+	userID, ok := helpers.RequireUserID(c)
+	if !ok {
+		return
+	}
+
+	diagrams, err := h.service.GetSharedWithMe(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to fetch shared diagrams",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "shared diagrams fetched successfully",
+		"data":    diagrams,
 	})
 }

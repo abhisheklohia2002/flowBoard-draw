@@ -23,6 +23,7 @@ type DiagramService interface {
 	GetCanvas(diagramID uint) (*dto.CanvasResponse, error)
 	GetVersions(diagramID uint) ([]dto.DiagramVersionResponse, error)
 	RestoreVersion(diagramID uint, versionID uint, userID uint) (*dto.SaveCanvasResponse, error)
+	GetSharedWithMe(userID uint) ([]dto.SharedDiagramResponse, error)
 }
 
 type DiagramServiceImpl struct {
@@ -416,4 +417,33 @@ func (s *DiagramServiceImpl) RestoreVersion(
 		EdgeCount:     len(edges),
 		VersionNumber: newVersionNumber,
 	}, nil
+}
+
+func (s *DiagramServiceImpl) GetSharedWithMe(userID uint) ([]dto.SharedDiagramResponse, error) {
+	rows, err := s.repo.FindSharedDiagramRows(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch shared diagrams: %w", err)
+	}
+
+	res := make([]dto.SharedDiagramResponse, 0, len(rows))
+
+	for _, row := range rows {
+		res = append(res, dto.SharedDiagramResponse{
+			ID:          row.ID,
+			ProjectID:   row.ProjectID,
+			ProjectName: row.ProjectName,
+			Name:        row.Name,
+
+			OwnerID:    row.OwnerID,
+			OwnerName:  row.OwnerName,
+			OwnerEmail: row.OwnerEmail,
+
+			CollaboratorRole: row.CollaboratorRole,
+
+			CreatedAt: row.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: row.UpdatedAt.Format(time.RFC3339),
+		})
+	}
+
+	return res, nil
 }

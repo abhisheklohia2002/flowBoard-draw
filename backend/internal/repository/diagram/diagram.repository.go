@@ -4,10 +4,27 @@ import (
 	dto "flowBoard/draw/internal/DTO"
 	"flowBoard/draw/internal/models"
 	"fmt"
+	"time"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
+
+type SharedDiagramRow struct {
+	ID          uint
+	ProjectID   uint
+	ProjectName string
+	Name        string
+
+	OwnerID    uint
+	OwnerName  string
+	OwnerEmail string
+
+	CollaboratorRole string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
 
 type DiagramRepository interface {
 	Create(diagram *models.Diagram) (*models.Diagram, error)
@@ -20,6 +37,8 @@ type DiagramRepository interface {
 	FindVersionByID(diagramID uint, versionID uint) (*models.DiagramVersion, error)
 	SaveCanvas(diagramID uint, userID uint, nodes []models.Node, edges []models.Edge, viewport dto.CanvasViewport, snapshot datatypes.JSON, changeNote string) (uint, error)
 	IsDiagramOwner(diagramID uint, userID uint) (bool, error)
+	FindSharedWithUser(userID uint) ([]models.Diagram, error)
+	FindSharedDiagramRows(userID uint) ([]SharedDiagramRow, error)
 }
 
 type DiagramRepositoryImpl struct {
@@ -213,4 +232,46 @@ func (r *DiagramRepositoryImpl) IsDiagramOwner(diagramID uint, userID uint) (boo
 		Error
 
 	return count > 0, err
+}
+
+func (r *DiagramRepositoryImpl) FindSharedWithUser(userID uint) ([]models.Diagram, error) {
+	var diagrams []models.Diagram
+
+	err := r.db.
+		Joins("JOIN diagram_collaborators dc ON dc.diagram_id = diagrams.id").
+		Where("dc.user_id = ?", userID).
+		Preload("Project").
+		Order("dc.created_at DESC").
+		Find(&diagrams).
+		Error
+
+	return diagrams, err
+}
+
+func (r *DiagramRepositoryImpl) FindSharedDiagramRows(userID uint) ([]SharedDiagramRow, error) {
+	var rows []SharedDiagramRow
+
+	err := r.db.
+		Table("diagrams").
+		Select(`
+			diagrams.id,
+			diagrams.project_id,
+			diagrams.name,
+			diagrams.created_at,
+			diagrams.updated_at,
+			projects.name AS project_name,
+			users.id AS owner_id,
+			users.full_name AS owner_name,
+			users.email AS owner_email,
+			dc.role AS collaborator_role
+		`).
+		Joins("JOIN diagram_collaborators dc ON dc.diagram_id = diagrams.id").
+		Joins("JOIN projects ON projects.id = diagrams.project_id").
+		Joins("JOIN users ON users.id = projects.user_id").
+		Where("dc.user_id = ?", userID).
+		Order("dc.created_at DESC").
+		Scan(&rows).
+		Error
+
+	return rows, err
 }

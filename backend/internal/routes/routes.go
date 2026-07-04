@@ -51,6 +51,7 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 
 		diagrams := protected.Group("/diagrams")
 		{
+			diagrams.GET("/shared-with-me", diagramHandler.GetSharedWithMe)
 			diagrams.GET("/:diagramID", diagramHandler.GetDiagram)
 			diagrams.PUT("/:diagramID", diagramHandler.UpdateDiagram)
 			diagrams.DELETE("/:diagramID", diagramHandler.DeleteDiagram)

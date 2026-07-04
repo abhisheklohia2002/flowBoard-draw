@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flowBoard/draw/internal/auth"
 	"flowBoard/draw/internal/config"
 	"flowBoard/draw/internal/connection"
@@ -100,8 +101,16 @@ func main() {
 
 	//Routes setup
 	rdb := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: "localhost:6368",
 	})
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		log.Fatal("failed to connect redis:", err)
+	}
+
+	log.Println("Redis connected successfully")
 	userRepository := userRepo.NewUserRepository(db)
 	refreshTokenRepo := refresh_tokens.NewRefreshTokenRepository(db)
 	privateKey, err := auth.LoadRSAPrivateKeyFromEnv("JWT_PRIVATE_KEY")
@@ -132,7 +141,7 @@ func main() {
 	collaborationServices := collaborationServices.NewCollaborationService(userRepository, diagramRepo, collaborationRepo, notificationServices)
 	collaborationHandler := collaborationHandler.NewCollaborationHandler(collaborationServices)
 	diagramHandler := handlers.NewDiagramHandler(diagramService, collaborationServices)
-	realtimeHandler := realTimeHandlers.NewRealtimeHandler(hub, collaborationServices)
+	realtimeHandler := realTimeHandlers.NewRealtimeHandler(hub, collaborationServices, userRepository)
 
 	notificationHandler := notificationHandler.NewNotificationHandler(notificationServices)
 	notificationStreamHandler := notificationStreamHandler.NewNotificationStreamHandler(rdb)
