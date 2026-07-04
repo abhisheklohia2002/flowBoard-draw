@@ -1,6 +1,7 @@
 package collaboration
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	collabrepo "flowBoard/draw/internal/repository/collaboration"
 	diagramrepo "flowBoard/draw/internal/repository/diagram"
 	userrepo "flowBoard/draw/internal/repository/users"
+	notificationservice "flowBoard/draw/internal/services/notifications"
 )
 
 type CollaborationService interface {
@@ -25,20 +27,23 @@ type CollaborationService interface {
 }
 
 type CollaborationServiceImpl struct {
-	userRepo    userrepo.UserRepository
-	diagramRepo diagramrepo.DiagramRepository
-	collabRepo  collabrepo.CollaborationRepository
+	userRepo            userrepo.UserRepository
+	diagramRepo         diagramrepo.DiagramRepository
+	collabRepo          collabrepo.CollaborationRepository
+	notificationService notificationservice.NotificationService
 }
 
 func NewCollaborationService(
 	userRepo userrepo.UserRepository,
 	diagramRepo diagramrepo.DiagramRepository,
 	collabRepo collabrepo.CollaborationRepository,
+	notificationService notificationservice.NotificationService,
 ) CollaborationService {
 	return &CollaborationServiceImpl{
-		userRepo:    userRepo,
-		diagramRepo: diagramRepo,
-		collabRepo:  collabRepo,
+		userRepo:            userRepo,
+		diagramRepo:         diagramRepo,
+		collabRepo:          collabRepo,
+		notificationService: notificationService,
 	}
 }
 
@@ -145,6 +150,30 @@ func (s *CollaborationServiceImpl) AddCollaborator(diagramID uint, currentUserID
 	if err := s.collabRepo.Add(&collaborator); err != nil {
 		return fmt.Errorf("failed to add collaborator: %w", err)
 	}
+	inviter, _ := s.userRepo.FindByID(currentUserID)
+	diagram, _ := s.diagramRepo.FindByID(diagramID)
+
+	inviterName := "Someone"
+	if inviter != nil {
+		inviterName = inviter.FullName
+	}
+
+	diagramName := "a diagram"
+	var projectID *uint
+
+	if diagram != nil {
+		diagramName = diagram.Name
+		projectID = &diagram.ProjectID
+	}
+
+	_ = s.notificationService.CreateCollaborationInvite(
+		context.Background(),
+		req.UserID,
+		inviterName,
+		diagramID,
+		projectID,
+		diagramName,
+	)
 
 	return nil
 }
