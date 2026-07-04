@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, Shapes } from "lucide-react";
+import { Search, Shapes, Workflow } from "lucide-react";
 import { SHAPES, type ShapeDefinition } from "../config/shapes";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,102 @@ interface ShapePaletteProps {
   selectedColor: NodeColor;
   onColorChange: (color: NodeColor) => void;
   onAddShape: (shape: ShapeDefinition) => void;
+}
+
+function ShapePreview({
+  shape,
+  selectedColor,
+}: {
+  shape: ShapeDefinition;
+  selectedColor: NodeColor;
+}) {
+  const style: React.CSSProperties = {
+    backgroundColor: selectedColor.bg,
+    borderColor: selectedColor.border,
+    color: selectedColor.text,
+  };
+
+  if (shape.type === "circle") {
+    return <div className="h-9 w-9 rounded-full border" style={style} />;
+  }
+
+  if (shape.type === "diamond") {
+    return (
+      <div className="flex h-10 w-10 items-center justify-center">
+        <div className="h-7 w-7 rotate-45 border" style={style} />
+      </div>
+    );
+  }
+
+  if (shape.type === "triangle") {
+    return (
+      <div
+        className="h-0 w-0 border-x-[18px] border-b-[32px] border-x-transparent"
+        style={{
+          borderBottomColor: selectedColor.border,
+        }}
+      />
+    );
+  }
+
+  if (shape.type === "database") {
+    return (
+      <div
+        className="flex h-8 w-12 items-center justify-center rounded-[18px] border text-[10px] font-semibold"
+        style={style}
+      >
+        DB
+      </div>
+    );
+  }
+
+  if (shape.type === "rounded" || shape.type === "service") {
+    return (
+      <div
+        className="flex h-8 w-12 items-center justify-center rounded-xl border"
+        style={style}
+      />
+    );
+  }
+
+  if (shape.type === "api") {
+    return (
+      <div
+        className="flex h-8 w-12 items-center justify-center rounded-lg border text-[9px] font-semibold"
+        style={style}
+      >
+        API
+      </div>
+    );
+  }
+
+  if (shape.type === "queue") {
+    return (
+      <div className="flex items-center">
+        <div className="h-7 w-4 rounded-l-md border" style={style} />
+        <div className="-ml-1 h-7 w-4 border" style={style} />
+        <div className="-ml-1 h-7 w-4 rounded-r-md border" style={style} />
+      </div>
+    );
+  }
+
+  if (shape.type === "process") {
+    return (
+      <div
+        className="flex h-8 w-12 items-center justify-center rounded-md border"
+        style={style}
+      >
+        <Workflow className="h-4 w-4" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex h-8 w-12 items-center justify-center rounded-md border"
+      style={style}
+    />
+  );
 }
 
 export function ShapePalette({
@@ -42,7 +138,7 @@ export function ShapePalette({
         acc[shape.category].push(shape);
         return acc;
       },
-      {}
+      {},
     );
   }, [filteredShapes]);
 
@@ -104,16 +200,16 @@ export function ShapePalette({
 
             <div className="grid grid-cols-2 gap-2">
               {shapes.map((shape) => {
-                const Icon = shape.icon;
-
                 return (
                   <Button
                     key={shape.type}
+                    type="button"
                     variant="outline"
-                    className="h-20 flex-col gap-2 border-white/10 bg-slate-800/80 text-slate-100 hover:bg-slate-700"
+                    className="h-24 flex-col gap-2 border-white/10 bg-slate-800/80 text-slate-100 hover:bg-slate-700"
                     onClick={() => onAddShape(shape)}
                   >
-                    <Icon className="h-5 w-5 text-cyan-300" />
+                    <ShapePreview shape={shape} selectedColor={selectedColor} />
+
                     <span className="text-xs">{shape.label}</span>
                   </Button>
                 );

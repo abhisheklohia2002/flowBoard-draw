@@ -38,6 +38,83 @@ type ShapeNodeData = {
   text: string;
 };
 
+function getHandleLayout(shapeType: string) {
+  const base = { transform: "translate(-50%, -50%)" };
+
+  if (shapeType === "triangle") {
+    return [
+      {
+        id: "top",
+        position: Position.Top,
+        style: { ...base, left: "50%", top: "6%" },
+      },
+      {
+        id: "right",
+        position: Position.Right,
+        style: { ...base, left: "78%", top: "68%" },
+      },
+      {
+        id: "bottom",
+        position: Position.Bottom,
+        style: { ...base, left: "50%", top: "96%" },
+      },
+      {
+        id: "left",
+        position: Position.Left,
+        style: { ...base, left: "22%", top: "68%" },
+      },
+    ];
+  }
+
+  if (shapeType === "diamond") {
+    return [
+      {
+        id: "top",
+        position: Position.Top,
+        style: { ...base, left: "50%", top: "8%" },
+      },
+      {
+        id: "right",
+        position: Position.Right,
+        style: { ...base, left: "92%", top: "50%" },
+      },
+      {
+        id: "bottom",
+        position: Position.Bottom,
+        style: { ...base, left: "50%", top: "92%" },
+      },
+      {
+        id: "left",
+        position: Position.Left,
+        style: { ...base, left: "8%", top: "50%" },
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "top",
+      position: Position.Top,
+      style: { ...base, left: "50%", top: "0%" },
+    },
+    {
+      id: "right",
+      position: Position.Right,
+      style: { ...base, left: "100%", top: "50%" },
+    },
+    {
+      id: "bottom",
+      position: Position.Bottom,
+      style: { ...base, left: "50%", top: "100%" },
+    },
+    {
+      id: "left",
+      position: Position.Left,
+      style: { ...base, left: "0%", top: "50%" },
+    },
+  ];
+}
+
 function ShapeNode({ data, selected }: NodeProps<Node<ShapeNodeData>>) {
   const shapeType = data.shapeType;
 
@@ -45,31 +122,33 @@ function ShapeNode({ data, selected }: NodeProps<Node<ShapeNodeData>>) {
 
   const handleClassName = "!h-1 !w-1  !bg-slate-950 !opacity-80";
   const isDiamond = shapeType === "diamond";
+
   const isCircle = shapeType === "circle";
+
   const isDatabase = shapeType === "database";
+
   const isRounded = shapeType === "rounded" || shapeType === "service";
 
-  const handles = [
-    { id: "top", position: Position.Top },
-    { id: "right", position: Position.Right },
-    { id: "bottom", position: Position.Bottom },
-    { id: "left", position: Position.Left },
-  ];
+  const isTriangle = shapeType === "triangle";
+
+  const isApi = shapeType === "api";
+
+  const isQueue = shapeType === "queue";
+
+  const isProcess = shapeType === "process";
+  const handles = getHandleLayout(shapeType);
+  const showBoxResizer = ![""].includes(shapeType);
 
   return (
     <div className="relative h-full w-full">
       <NodeResizer
-        isVisible={selected}
+        isVisible={selected && showBoxResizer}
         minWidth={80}
         minHeight={50}
         handleClassName={handleClassName}
         lineClassName="!border"
-        handleStyle={{
-          borderColor: nodeBorderColor,
-        }}
-        lineStyle={{
-          borderColor: nodeBorderColor,
-        }}
+        handleStyle={{ borderColor: nodeBorderColor }}
+        lineStyle={{ borderColor: nodeBorderColor }}
       />
 
       {handles.map((handle) => (
@@ -114,6 +193,98 @@ function ShapeNode({ data, selected }: NodeProps<Node<ShapeNodeData>>) {
               {data.label}
             </div>
           </div>
+        </div>
+      ) : isTriangle ? (
+        <div className="flex h-full w-full items-center justify-center">
+          <svg
+            viewBox="0 0 120 100"
+            className={[
+              "h-full w-full drop-shadow-lg transition",
+              selected
+                ? "ring-2 ring-cyan-300 ring-offset-2 ring-offset-slate-950"
+                : "",
+            ].join(" ")}
+          >
+            <polygon
+              points="60,5 115,95 5,95"
+              fill={data.bg}
+              stroke={data.border}
+              strokeWidth="3"
+            />
+
+            <foreignObject x="20" y="45" width="80" height="35">
+              <div
+                className="flex h-full w-full items-center justify-center text-center text-sm font-medium"
+                style={{ color: data.text }}
+              >
+                {data.label}
+              </div>
+            </foreignObject>
+          </svg>
+        </div>
+      ) : isQueue ? (
+        <div
+          className={[
+            "flex h-full w-full items-center justify-center gap-0 px-4 shadow-lg transition",
+            selected
+              ? "ring-2 ring-cyan-300 ring-offset-2 ring-offset-slate-950"
+              : "",
+          ].join(" ")}
+        >
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              className={[
+                "flex h-[70%] flex-1 items-center justify-center border",
+                item === 0 ? "rounded-l-xl" : "",
+                item === 2 ? "rounded-r-xl" : "",
+                item !== 0 ? "-ml-px" : "",
+              ].join(" ")}
+              style={{
+                backgroundColor: data.bg,
+                borderColor: data.border,
+                color: data.text,
+              }}
+            >
+              {item === 1 ? (
+                <span className="text-center text-sm font-medium">
+                  {data.label}
+                </span>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : isApi ? (
+        <div
+          className={[
+            "flex h-full w-full items-center justify-center rounded-xl border px-3 text-center text-sm font-medium shadow-lg transition",
+            selected
+              ? "ring-2 ring-cyan-300 ring-offset-2 ring-offset-slate-950"
+              : "",
+          ].join(" ")}
+          style={{
+            backgroundColor: data.bg,
+            borderColor: data.border,
+            color: data.text,
+          }}
+        >
+          {data.label}
+        </div>
+      ) : isProcess ? (
+        <div
+          className={[
+            "flex h-full w-full items-center justify-center rounded-md border px-3 text-center text-sm font-medium shadow-lg transition",
+            selected
+              ? "ring-2 ring-cyan-300 ring-offset-2 ring-offset-slate-950"
+              : "",
+          ].join(" ")}
+          style={{
+            backgroundColor: data.bg,
+            borderColor: data.border,
+            color: data.text,
+          }}
+        >
+          {data.label}
         </div>
       ) : (
         <div
@@ -189,6 +360,25 @@ export function DiagramEditorPage() {
       }
 
       if (shape.type === "database") {
+        width = 160;
+        height = 75;
+      }
+      if (shape.type === "triangle") {
+        width = 130;
+        height = 110;
+      }
+
+      if (shape.type === "queue") {
+        width = 180;
+        height = 80;
+      }
+
+      if (shape.type === "api") {
+        width = 160;
+        height = 75;
+      }
+
+      if (shape.type === "process") {
         width = 160;
         height = 75;
       }
