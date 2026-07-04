@@ -26,7 +26,7 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 		protected := api.Group("")
 
 		protected.Use(middleware.AuthMiddleware())
-
+		protected.GET("/users/search", collaborationHandler.SearchUsers)
 		protected.GET("/user/self", userhandler.Self)
 		protected.POST("/user/logout", userhandler.Logout)
 
@@ -53,6 +53,15 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 			diagrams.POST("/:diagramID/versions/:versionID/restore", diagramHandler.RestoreVersion)
 
 		}
+
+		collaboration := protected.Group("")
+		{
+			collaboration.GET("/diagrams/:diagramID/collaborators", collaborationHandler.GetCollaborators)
+			collaboration.POST("/diagrams/:diagramID/collaborators", collaborationHandler.AddCollaborator)
+			collaboration.DELETE("/diagrams/:diagramID/collaborators/:userID", collaborationHandler.RemoveCollaborator)
+			collaboration.PATCH("/diagrams/:diagramID/collaborators/:userID/role", collaborationHandler.UpdateRole)
+		}
+
 	}
 
 }
