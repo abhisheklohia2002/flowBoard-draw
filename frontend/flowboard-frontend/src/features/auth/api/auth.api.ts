@@ -20,3 +20,9 @@ export async function getMe(): Promise<User> {
   const res = await http.get<APIResponse<User>>("/api/user/self");
   return res.data.data;
 }
+
+
+export async function refreshToken():Promise<void>{
+  await http.post("/api/user/refresh");
+
+}

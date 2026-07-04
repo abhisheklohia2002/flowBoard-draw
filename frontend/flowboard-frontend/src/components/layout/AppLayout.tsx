@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   FolderKanban,
   LayoutDashboard,
@@ -20,20 +20,26 @@ export  function AppLayout() {
   const { sidebarCollapsed, toggleSidebar } = useAppStore();
   const logout = useLogout();
  
+   const navigate = useNavigate();
+
   const [me, setMe] = useState<User | null>(null);
-
+  const [isMeLoading, setIsMeLoading] = useState(true);
 useEffect(() => {
-  const fetchMe = async () => {
-    try {
-      const user = await getMe();
-      setMe(user);
-    } catch (error) {
-      console.error("Failed to fetch user", error);
-    }
-  };
+    const fetchMe = async () => {
+      try {
+        const user = await getMe();
+        setMe(user);
+      } catch (error) {
+        console.error("Failed to fetch user", error);
 
-  fetchMe();
-}, []);
+        navigate("/login", { replace: true });
+      } finally {
+        setIsMeLoading(false);
+      }
+    };
+
+    fetchMe();
+  }, [navigate]);
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <aside
