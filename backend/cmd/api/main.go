@@ -14,7 +14,6 @@ import (
 	// "flowBoard/draw/internal/models"
 	"flowBoard/draw/internal/realtime"
 
-	"os"
 	"time"
 
 	collaborationRepo "flowBoard/draw/internal/repository/collaboration"
@@ -65,7 +64,7 @@ func main() {
 
 	allowedOrigins := []string{"http://localhost:5173"}
 
-	if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
+	if frontendURL := cfg.FRONTEND_URL; frontendURL != "" {
 		allowedOrigins = append(allowedOrigins, frontendURL)
 	}
 	log.Printf("Allowed CORS origins: %v\n", allowedOrigins)
