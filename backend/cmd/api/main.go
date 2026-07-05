@@ -10,6 +10,8 @@ import (
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
 	userHandler "flowBoard/draw/internal/handlers/users"
+	"flowBoard/draw/internal/models"
+	"strings"
 
 	// "flowBoard/draw/internal/models"
 	"flowBoard/draw/internal/realtime"
@@ -46,18 +48,18 @@ func main() {
 	cfg := config.LoadEnv()
 	port := cfg.Port
 	db := connection.ConnectDB(cfg)
-	// db.AutoMigrate(
-	// 	&models.User{},
-	// 	&models.RefreshToken{},
-	// 	&models.Project{},
-	// 	&models.Diagram{},
-	// 	&models.Node{},
-	// 	&models.Edge{},
-	// 	&models.DiagramVersion{},
-	// 	&models.DiagramCollaborator{},
-	// 	&models.DiagramVersion{},
-	// 	&models.Notification{},
-	// )
+	db.AutoMigrate(
+		&models.User{},
+		&models.RefreshToken{},
+		&models.Project{},
+		&models.Diagram{},
+		&models.Node{},
+		&models.Edge{},
+		&models.DiagramVersion{},
+		&models.DiagramCollaborator{},
+		&models.DiagramVersion{},
+		&models.Notification{},
+	)
 
 	log.Println("Server starting on port:", port)
 	r := gin.Default()
@@ -104,12 +106,25 @@ func main() {
 	)
 
 	//Routes setup
-	opt, err := redis.ParseURL(cfg.REDIS_URL)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	rdb := redis.NewClient(opt)
+	var rdb *redis.Client
+
+	if strings.HasPrefix(cfg.REDIS_URL, "redis://") ||
+		strings.HasPrefix(cfg.REDIS_URL, "rediss://") {
+
+		opt, err := redis.ParseURL(cfg.REDIS_URL)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		rdb = redis.NewClient(opt)
+
+	} else {
+
+		rdb = redis.NewClient(&redis.Options{
+			Addr: cfg.REDIS_URL,
+		})
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -117,8 +132,6 @@ func main() {
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		log.Fatal("failed to connect redis:", err)
 	}
-
-	log.Println("Redis connected successfully")
 	userRepository := userRepo.NewUserRepository(db)
 	refreshTokenRepo := refresh_tokens.NewRefreshTokenRepository(db)
 	privateKey, err := auth.LoadRSAPrivateKeyFromEnv("JWT_PRIVATE_KEY")

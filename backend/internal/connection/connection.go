@@ -14,7 +14,7 @@ import (
 
 func ConnectDB(cfg config.Config) *gorm.DB {
 	databaseURL := cfg.DB_URL
-
+	log.Println(databaseURL, "---->")
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
@@ -25,7 +25,7 @@ func ConnectDB(cfg config.Config) *gorm.DB {
 		},
 	)
 
-	if databaseURL != "" {
+	if databaseURL != "nil" {
 		log.Println("connecting to render database")
 
 		database, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{
