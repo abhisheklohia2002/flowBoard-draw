@@ -24,6 +24,7 @@ type Config struct {
 	JWT_ISSUER      string
 	DB_URL          string
 	REDIS_URL       string
+	FRONTEND_URL    string
 }
 
 func LoadEnv() Config {
@@ -70,5 +71,6 @@ func LoadEnv() Config {
 		JWT_ISSUER:      helpers.GetEnv("JWT_ISSUER", "JWT_ISSUER"),
 		DB_URL:          helpers.GetEnv("DB_URL", "DB_URL"),
 		REDIS_URL:       helpers.GetEnv("REDIS_URL", "REDIS_URL"),
+		FRONTEND_URL:    helpers.GetEnv("FRONTEND_URL", "FRONTEND_URL"),
 	}
 }
