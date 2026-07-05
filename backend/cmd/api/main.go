@@ -10,6 +10,8 @@ import (
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
 	userHandler "flowBoard/draw/internal/handlers/users"
+
+	// "flowBoard/draw/internal/models"
 	"flowBoard/draw/internal/realtime"
 
 	"os"
@@ -53,6 +55,9 @@ func main() {
 	// 	&models.Node{},
 	// 	&models.Edge{},
 	// 	&models.DiagramVersion{},
+	// 	&models.DiagramCollaborator{},
+	// 	&models.DiagramVersion{},
+	// 	&models.Notification{},
 	// )
 
 	log.Println("Server starting on port:", port)

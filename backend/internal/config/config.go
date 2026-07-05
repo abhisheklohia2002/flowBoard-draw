@@ -22,6 +22,7 @@ type Config struct {
 	JWTKid          string
 	JWT_PRIVATE_KEY string
 	JWT_ISSUER      string
+	DB_URL          string
 }
 
 func LoadEnv() Config {
@@ -66,5 +67,6 @@ func LoadEnv() Config {
 		JWTKid:          helpers.GetEnv("JWT_KID", "********"),
 		JWT_PRIVATE_KEY: helpers.NormalizePEM(helpers.GetEnv("JWT_PRIVATE_KEY", "private_key")),
 		JWT_ISSUER:      helpers.GetEnv("JWT_ISSUER", "JWT_ISSUER"),
+		DB_URL:          helpers.GetEnv("DB_URL", "DB_URL"),
 	}
 }
