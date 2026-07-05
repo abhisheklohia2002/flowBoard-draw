@@ -105,9 +105,13 @@ func main() {
 	)
 
 	//Routes setup
-	rdb := redis.NewClient(&redis.Options{
-		Addr: cfg.REDIS_URL,
-	})
+	opt, err := redis.ParseURL(cfg.REDIS_URL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rdb := redis.NewClient(opt)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
