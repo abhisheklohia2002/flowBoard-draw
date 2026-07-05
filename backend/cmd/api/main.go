@@ -106,7 +106,7 @@ func main() {
 
 	//Routes setup
 	rdb := redis.NewClient(&redis.Options{
-		Addr: "localhost:6368",
+		Addr: cfg.REDIS_URL,
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
