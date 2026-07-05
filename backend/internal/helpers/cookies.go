@@ -11,7 +11,8 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 	accessMaxAge := 60 * 60
 	refreshMaxAge := 60 * 60 * 24 * 365
 
-	isProduction := os.Getenv("APP_ENV") == "production"
+	envFile := ".env"
+	isProduction := os.Getenv("APP_ENV") == envFile
 
 	sameSite := http.SameSiteLaxMode
 	if isProduction {
