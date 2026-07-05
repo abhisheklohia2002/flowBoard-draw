@@ -10,7 +10,6 @@ import (
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
 	userHandler "flowBoard/draw/internal/handlers/users"
-	"flowBoard/draw/internal/models"
 	"strings"
 
 	// "flowBoard/draw/internal/models"
@@ -48,18 +47,18 @@ func main() {
 	cfg := config.LoadEnv()
 	port := cfg.Port
 	db := connection.ConnectDB(cfg)
-	db.AutoMigrate(
-		&models.User{},
-		&models.RefreshToken{},
-		&models.Project{},
-		&models.Diagram{},
-		&models.Node{},
-		&models.Edge{},
-		&models.DiagramVersion{},
-		&models.DiagramCollaborator{},
-		&models.DiagramVersion{},
-		&models.Notification{},
-	)
+	// db.AutoMigrate(
+	// 	&models.User{},
+	// 	&models.RefreshToken{},
+	// 	&models.Project{},
+	// 	&models.Diagram{},
+	// 	&models.Node{},
+	// 	&models.Edge{},
+	// 	&models.DiagramVersion{},
+	// 	&models.DiagramCollaborator{},
+	// 	&models.DiagramVersion{},
+	// 	&models.Notification{},
+	// )
 
 	log.Println("Server starting on port:", port)
 	r := gin.Default()
@@ -130,11 +129,11 @@ func main() {
 	defer cancel()
 
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Fatal("failed to connect redis:", err)
+		log.Fatal("failed to connect redis:_>", err)
 	}
 	userRepository := userRepo.NewUserRepository(db)
 	refreshTokenRepo := refresh_tokens.NewRefreshTokenRepository(db)
-	privateKey, err := auth.LoadRSAPrivateKeyFromEnv("JWT_PRIVATE_KEY")
+	privateKey, err := auth.LoadRSAPrivateKeyFromEnv(cfg.JWT_PRIVATE_KEY)
 
 	projectRepo := projectRepositories.NewProjectRepository(db)
 	projectService := projectServices.NewProjectService(projectRepo)
