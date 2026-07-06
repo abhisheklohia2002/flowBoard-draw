@@ -10,6 +10,7 @@ import (
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
 	userHandler "flowBoard/draw/internal/handlers/users"
+	"flowBoard/draw/internal/models"
 	"strings"
 
 	// "flowBoard/draw/internal/models"
@@ -47,18 +48,18 @@ func main() {
 	cfg := config.LoadEnv()
 	port := cfg.Port
 	db := connection.ConnectDB(cfg)
-	// db.AutoMigrate(
-	// 	&models.User{},
-	// 	&models.RefreshToken{},
-	// 	&models.Project{},
-	// 	&models.Diagram{},
-	// 	&models.Node{},
-	// 	&models.Edge{},
-	// 	&models.DiagramVersion{},
-	// 	&models.DiagramCollaborator{},
-	// 	&models.DiagramVersion{},
-	// 	&models.Notification{},
-	// )
+	db.AutoMigrate(
+		&models.User{},
+		&models.RefreshToken{},
+		&models.Project{},
+		&models.Diagram{},
+		&models.Node{},
+		&models.Edge{},
+		&models.DiagramVersion{},
+		&models.DiagramCollaborator{},
+		&models.DiagramVersion{},
+		&models.Notification{},
+	)
 
 	log.Println("Server starting on port:", port)
 	r := gin.Default()
