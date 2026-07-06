@@ -25,7 +25,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 		Path:     "/",
 		MaxAge:   accessMaxAge,
 		HttpOnly: true,
-		Secure:   isProduction,
+		Secure:   !isProduction,
 		SameSite: sameSite,
 	})
 
@@ -35,7 +35,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 		Path:     "/",
 		MaxAge:   refreshMaxAge,
 		HttpOnly: true,
-		Secure:   isProduction,
+		Secure:   !isProduction,
 		SameSite: http.SameSiteNoneMode,
 	})
 }
@@ -74,7 +74,7 @@ func ClearAuthCookies(c *gin.Context) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   isProduction,
+		Secure:   !isProduction,
 		SameSite: sameSite,
 	})
 
@@ -84,7 +84,7 @@ func ClearAuthCookies(c *gin.Context) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   isProduction,
+		Secure:   !isProduction,
 		SameSite: sameSite,
 	})
 }
