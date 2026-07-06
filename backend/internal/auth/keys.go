@@ -5,13 +5,16 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os"
+	"strings"
 )
 
 func LoadRSAPrivateKeyFromEnv(envKey string) (*rsa.PrivateKey, error) {
-	privateKeyPEM := envKey
+	privateKeyPEM := os.Getenv(envKey)
 	if privateKeyPEM == "" {
 		return nil, fmt.Errorf("%s is empty", envKey)
 	}
+	privateKeyPEM = strings.ReplaceAll(privateKeyPEM, `\n`, "\n")
 
 	block, _ := pem.Decode([]byte(privateKeyPEM))
 	if block == nil {
