@@ -14,7 +14,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 	envFile := ".env"
 	isProduction := os.Getenv("APP_ENV") == envFile
 
-	sameSite := http.SameSiteLaxMode
+	// sameSite := http.SameSiteLaxMode
 	// if isProduction {
 	// 	sameSite = http.SameSiteNoneMode
 	// }
@@ -26,7 +26,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 		MaxAge:   accessMaxAge,
 		HttpOnly: true,
 		Secure:   isProduction,
-		SameSite: sameSite,
+		SameSite: http.SameSiteNoneMode,
 	})
 
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -36,7 +36,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 		MaxAge:   refreshMaxAge,
 		HttpOnly: true,
 		Secure:   isProduction,
-		SameSite: sameSite,
+		SameSite: http.SameSiteNoneMode,
 	})
 }
 
