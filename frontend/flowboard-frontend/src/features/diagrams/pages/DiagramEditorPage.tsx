@@ -1425,6 +1425,8 @@ export function DiagramEditorPage() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onInit={setFlow}
+            fitView
+            autoPanOnNodeFocus={true}
             onPaneClick={() => {
               setSelectedElementID(null);
               setShowBgPanel(false);
@@ -1495,7 +1497,7 @@ export function DiagramEditorPage() {
                 },
               });
             }}
-            fitView
+            
             className="h-full w-full"
             style={{
               backgroundColor: canvasBgColor,
