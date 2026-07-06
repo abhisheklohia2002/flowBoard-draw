@@ -17,9 +17,9 @@ export const http: AxiosInstance = axios.create({
 const refreshHttp = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // headers: {
+  //   "Content-Type": "application/json",
+  // },
 });
 
 type RetryConfig = InternalAxiosRequestConfig & {
