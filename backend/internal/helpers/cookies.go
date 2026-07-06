@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,8 +10,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 	accessMaxAge := 60 * 60
 	refreshMaxAge := 60 * 60 * 24 * 365
 
-	envFile := ".env"
-	isProduction := os.Getenv("APP_ENV") == envFile
+	// envFile := ".env"
 
 	sameSite := http.SameSiteLaxMode
 	// if isProduction {
@@ -25,7 +23,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 		Path:     "/",
 		MaxAge:   accessMaxAge,
 		HttpOnly: true,
-		Secure:   !isProduction,
+		Secure:   false,
 		SameSite: sameSite,
 	})
 
@@ -35,7 +33,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 		Path:     "/",
 		MaxAge:   refreshMaxAge,
 		HttpOnly: true,
-		Secure:   !isProduction,
+		Secure:   false,
 		SameSite: sameSite,
 	})
 
@@ -62,30 +60,35 @@ func RequireUserID(c *gin.Context) (uint, bool) {
 }
 
 func ClearAuthCookies(c *gin.Context) {
-	isProduction := os.Getenv("APP_ENV") == "production"
+	// isProduction := os.Getenv("APP_ENV") == "production"
 
-	sameSite := http.SameSiteLaxMode
+	// sameSite := http.SameSiteLaxMode
 	// if isProduction {
 	// 	sameSite = http.SameSiteNoneMode
 	// }
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "access_token",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   !isProduction,
-		SameSite: sameSite,
-	})
+	c.SetSameSite(http.SameSiteLaxMode)
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   !isProduction,
-		SameSite: sameSite,
-	})
+	// http.SetCookie(c.Writer, &http.Cookie{
+	// 	Name:     "access_token",
+	// 	Value:    "",
+	// 	Path:     "/",
+	// 	MaxAge:   -1,
+	// 	HttpOnly: true,
+	// 	Secure:   false,
+	// 	SameSite: sameSite,
+	// })
+
+	// http.SetCookie(c.Writer, &http.Cookie{
+	// 	Name:     "refresh_token",
+	// 	Value:    "",
+	// 	Path:     "/",
+	// 	MaxAge:   -1,
+	// 	HttpOnly: true,
+	// 	Secure:   false,
+	// 	SameSite: sameSite,
+	// })
+
+	c.SetCookie("access_token", "", -1, "/", "", false, true)
+	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 }
