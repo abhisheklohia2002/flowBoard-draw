@@ -36,7 +36,7 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 		MaxAge:   refreshMaxAge,
 		HttpOnly: true,
 		Secure:   !isProduction,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: sameSite,
 	})
 
 }
