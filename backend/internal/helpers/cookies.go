@@ -63,9 +63,9 @@ func RequireUserID(c *gin.Context) (uint, bool) {
 func ClearAuthCookies(c *gin.Context) {
 	isProduction := os.Getenv("APP_ENV") == "production"
 
-	sameSite := http.SameSiteLaxMode
+	// sameSite := http.SameSiteLaxMode
 	if isProduction {
-		sameSite = http.SameSiteNoneMode
+		// sameSite = http.SameSiteNoneMode
 	}
 
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -75,7 +75,7 @@ func ClearAuthCookies(c *gin.Context) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   isProduction,
-		SameSite: sameSite,
+		SameSite: http.SameSiteNoneMode,
 	})
 
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -85,6 +85,6 @@ func ClearAuthCookies(c *gin.Context) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   isProduction,
-		SameSite: sameSite,
+		SameSite: http.SameSiteNoneMode,
 	})
 }
