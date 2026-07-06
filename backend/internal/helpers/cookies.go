@@ -15,9 +15,9 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 	isProduction := os.Getenv("APP_ENV") == envFile
 
 	sameSite := http.SameSiteLaxMode
-	if isProduction {
-		sameSite = http.SameSiteNoneMode
-	}
+	// if isProduction {
+	// 	sameSite = http.SameSiteNoneMode
+	// }
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "access_token",
@@ -64,9 +64,9 @@ func ClearAuthCookies(c *gin.Context) {
 	isProduction := os.Getenv("APP_ENV") == "production"
 
 	sameSite := http.SameSiteLaxMode
-	if isProduction {
-		sameSite = http.SameSiteNoneMode
-	}
+	// if isProduction {
+	// 	sameSite = http.SameSiteNoneMode
+	// }
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "access_token",
