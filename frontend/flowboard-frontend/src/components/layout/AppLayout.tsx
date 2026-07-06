@@ -72,12 +72,12 @@ export function AppLayout() {
         </div>
 
         <nav className="space-y-1 p-3">
-          <SidebarLink
+          {/* <SidebarLink
             to="/"
             icon={LayoutDashboard}
             label="Dashboard"
             collapsed={sidebarCollapsed}
-          />
+          /> */}
 
           <SidebarLink
             to="/projects"

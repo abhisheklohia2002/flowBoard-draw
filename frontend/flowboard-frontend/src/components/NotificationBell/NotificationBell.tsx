@@ -30,7 +30,7 @@ export function NotificationBell({className}:NotificationBellProps) {
   };
 
   return (
-    <div className={`relative  ${className}`}>
+    <div className={`relative`}>
       <Button
         size="icon"
         variant="ghost"
