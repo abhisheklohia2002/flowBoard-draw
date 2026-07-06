@@ -10,21 +10,14 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 	accessMaxAge := 60 * 60
 	refreshMaxAge := 60 * 60 * 24 * 365
 
-	// envFile := ".env"
-
-	sameSite := http.SameSiteLaxMode
-	// if isProduction {
-	// 	sameSite = http.SameSiteNoneMode
-	// }
-
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
 		MaxAge:   accessMaxAge,
 		HttpOnly: true,
-		Secure:   false,
-		SameSite: sameSite,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -33,11 +26,43 @@ func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
 		Path:     "/",
 		MaxAge:   refreshMaxAge,
 		HttpOnly: true,
-		Secure:   false,
-		SameSite: sameSite,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
-
 }
+
+// func SetAuthCookies(c *gin.Context, accessToken string, refreshToken string) {
+// 	accessMaxAge := 60 * 60
+// 	refreshMaxAge := 60 * 60 * 24 * 365
+
+// 	// envFile := ".env"
+
+// 	sameSite := http.SameSiteLaxMode
+// 	// if isProduction {
+// 	// 	sameSite = http.SameSiteNoneMode
+// 	// }
+
+// 	http.SetCookie(c.Writer, &http.Cookie{
+// 		Name:     "access_token",
+// 		Value:    accessToken,
+// 		Path:     "/",
+// 		MaxAge:   accessMaxAge,
+// 		HttpOnly: true,
+// 		Secure:   false,
+// 		SameSite: sameSite,
+// 	})
+
+// 	http.SetCookie(c.Writer, &http.Cookie{
+// 		Name:     "refresh_token",
+// 		Value:    refreshToken,
+// 		Path:     "/",
+// 		MaxAge:   refreshMaxAge,
+// 		HttpOnly: true,
+// 		Secure:   false,
+// 		SameSite: sameSite,
+// 	})
+
+// }
 
 func RequireUserID(c *gin.Context) (uint, bool) {
 	value, exists := c.Get("user_id")
@@ -60,35 +85,54 @@ func RequireUserID(c *gin.Context) (uint, bool) {
 }
 
 func ClearAuthCookies(c *gin.Context) {
-	// isProduction := os.Getenv("APP_ENV") == "production"
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	})
 
-	// sameSite := http.SameSiteLaxMode
-	// if isProduction {
-	// 	sameSite = http.SameSiteNoneMode
-	// }
-
-	c.SetSameSite(http.SameSiteLaxMode)
-
-	// http.SetCookie(c.Writer, &http.Cookie{
-	// 	Name:     "access_token",
-	// 	Value:    "",
-	// 	Path:     "/",
-	// 	MaxAge:   -1,
-	// 	HttpOnly: true,
-	// 	Secure:   false,
-	// 	SameSite: sameSite,
-	// })
-
-	// http.SetCookie(c.Writer, &http.Cookie{
-	// 	Name:     "refresh_token",
-	// 	Value:    "",
-	// 	Path:     "/",
-	// 	MaxAge:   -1,
-	// 	HttpOnly: true,
-	// 	Secure:   false,
-	// 	SameSite: sameSite,
-	// })
-
-	c.SetCookie("access_token", "", -1, "/", "", false, true)
-	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	})
 }
+
+// func ClearAuthCookies(c *gin.Context) {
+// 	// isProduction := os.Getenv("APP_ENV") == "production"
+
+// 	sameSite := http.SameSiteLaxMode
+// 	// if isProduction {
+// 	// 	sameSite = http.SameSiteNoneMode
+// 	// }
+
+// 	c.SetSameSite(http.SameSiteLaxMode)
+
+// 	http.SetCookie(c.Writer, &http.Cookie{
+// 		Name:     "access_token",
+// 		Value:    "",
+// 		Path:     "/",
+// 		MaxAge:   -1,
+// 		HttpOnly: true,
+// 		Secure:   false,
+// 		SameSite: sameSite,
+// 	})
+
+// 	http.SetCookie(c.Writer, &http.Cookie{
+// 		Name:     "refresh_token",
+// 		Value:    "",
+// 		Path:     "/",
+// 		MaxAge:   -1,
+// 		HttpOnly: true,
+// 		Secure:   false,
+// 		SameSite: sameSite,
+// 	})
+// }
