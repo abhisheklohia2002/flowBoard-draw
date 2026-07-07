@@ -8,6 +8,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "express": "^5.2.1"
   },
@@ -18,6 +19,7 @@
     "@langchain/core": "^1.2.1",
     "@langchain/langgraph": "^1.4.7",
     "@langchain/openai": "^1.5.3",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "langchain": "^1.5.2"
   }
