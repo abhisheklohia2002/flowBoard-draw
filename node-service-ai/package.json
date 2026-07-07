@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev:test": "bun run ./src/server.ts"
+    "dev:test": "NODE_ENV=test bun --watch src/server.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
