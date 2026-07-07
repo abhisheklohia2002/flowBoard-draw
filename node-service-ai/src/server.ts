@@ -4,9 +4,17 @@ import { config } from "../config/config";
 import modelInvoke from "./graph/graph";
 import cors from "cors";
 
+const allowedOrigins = ["http://localhost:6900", config.FLOWDRAW_URL];
+
 app.use(
   cors({
-    origin: ["localhost:6900", config.FLOWDRAW_URL],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
