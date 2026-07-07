@@ -3,10 +3,21 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev:test": "bun run ./src/server.ts"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/express": "^5.0.6",
+    "express": "^5.2.1"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@langchain/core": "^1.2.1",
+    "@langchain/langgraph": "^1.4.7",
+    "dotenv": "^17.4.2",
+    "langchain": "^1.5.2"
   }
 }
