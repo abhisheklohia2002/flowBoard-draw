@@ -6,6 +6,8 @@ import (
 	"flowBoard/draw/internal/config"
 	"flowBoard/draw/internal/connection"
 	collaborationHandler "flowBoard/draw/internal/handlers/collaboration"
+	llmHandler "flowBoard/draw/internal/handlers/llm"
+
 	handlers "flowBoard/draw/internal/handlers/diagram"
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
@@ -18,6 +20,8 @@ import (
 	"time"
 
 	collaborationRepo "flowBoard/draw/internal/repository/collaboration"
+	llmRepo "flowBoard/draw/internal/repository/llm"
+
 	diagramRepositories "flowBoard/draw/internal/repository/diagram"
 	notificationRepositories "flowBoard/draw/internal/repository/notifications"
 	projectRepositories "flowBoard/draw/internal/repository/project"
@@ -26,6 +30,8 @@ import (
 	userRepo "flowBoard/draw/internal/repository/users"
 	"flowBoard/draw/internal/routes"
 	collaborationServices "flowBoard/draw/internal/services/collaboration"
+	llmServices "flowBoard/draw/internal/services/llm"
+
 	notificationServices "flowBoard/draw/internal/services/notifications"
 
 	diagramServices "flowBoard/draw/internal/services/diagrams"
@@ -166,7 +172,11 @@ func main() {
 	notificationHandler := notificationHandler.NewNotificationHandler(notificationServices)
 	notificationStreamHandler := notificationStreamHandler.NewNotificationStreamHandler(rdb)
 
-	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler, *realtimeHandler, *notificationHandler, *notificationStreamHandler)
+	//LLM setup
+	llmRepo := llmRepo.NewLLMRepository(db)
+	llmService := llmServices.NewLLMService(llmRepo)
+	llmHandler := llmHandler.NewLLMHandlers(llmService)
+	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler, *realtimeHandler, *notificationHandler, *notificationStreamHandler,llmHandler)
 
 	r.Run(":" + "8080")
 	if err := r.Run(":" + port); err != nil {

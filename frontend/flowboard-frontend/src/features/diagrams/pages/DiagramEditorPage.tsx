@@ -22,7 +22,15 @@ import {
   type ReactFlowInstance,
 } from "@xyflow/react";
 
-import { Clock, Palette, Save, Share2, Trash2, Workflow } from "lucide-react";
+import {
+  Bot,
+  Clock,
+  Palette,
+  Save,
+  Share2,
+  Trash2,
+  Workflow,
+} from "lucide-react";
 
 import type {
   RealtimeMessage,
@@ -44,6 +52,8 @@ import { ShapePalette } from "@/features/canvas/components/ShapePalette";
 import { NODE_COLORS, type NodeColor } from "@/features/canvas/config/colors";
 import { CollaborateDialog } from "@/features/collaboration/components/CollaborateDialog";
 import { useDiagramRealtime } from "@/features/realtime/hook/useDiagramRealtime";
+import { getLayoutedElements } from "@/utils/dagre";
+import { useGenerateDiagram } from "../hooks/useGenerateDiagram";
 
 type ShapeNodeData = {
   label: string;
@@ -355,7 +365,9 @@ export function DiagramEditorPage() {
   const [activities, setActivities] = useState<
     Record<string, ActivityIndicator>
   >({});
-
+  const [showAI, setShowAI] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [loadingAI, setLoadingAI] = useState(false);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [shapeBorderColor, setShapeBorderColor] = useState("#22d3ee");
   const [lineColor, setLineColor] = useState("#67e8f9");
@@ -722,7 +734,7 @@ export function DiagramEditorPage() {
       setEdges((current) => {
         const updatedEdges = applyEdgeChanges(changes, current);
 
-        return updatedEdges.map((edge:any) => {
+        return updatedEdges.map((edge: any) => {
           const stroke =
             typeof edge.style?.stroke === "string"
               ? edge.style.stroke
@@ -1053,6 +1065,81 @@ export function DiagramEditorPage() {
     setDirty(true);
   }, [edges, nodes, sendMessage, setDirty]);
 
+  const generateDiagram = useGenerateDiagram(diagramID);
+  const handleGenerateDiagram = () => {
+    setLoadingAI(!loadingAI);
+    generateDiagram.mutate(
+      {
+        userMessage: prompt,
+        diagram: diagramID,
+      },
+      {
+        onSuccess: (response: any) => {
+          setLoadingAI(false);
+          setShowAI(false)
+          setPrompt("")
+          const aiNodes: FlowNode[] = response.data.entities.map(
+            (entity: any, index: number) => ({
+              id: entity.id,
+              type: "shape",
+              position: {
+                x: index * 250,
+                y: 0,
+              },
+              style: {
+                width: 240,
+                height: 180,
+              },
+              data: {
+                label: entity.name,
+                shapeType: "rectangle",
+                bg: "#0f172a",
+                border: "#22d3ee",
+                text: "#ffffff",
+
+                // keep all attributes if your ShapeNode renders them
+                attributes: entity.attributes,
+              },
+            }),
+          );
+
+          const aiEdges: FlowEdge[] = response.data.relationships.map(
+            (relationship: any) => ({
+              id: `${relationship.from}-${relationship.to}`,
+              source: relationship.from,
+              target: relationship.to,
+              type: "smoothstep",
+              label: relationship.label,
+              animated: false,
+              style: {
+                stroke: "#67e8f9",
+                strokeWidth: 2,
+              },
+            }),
+          );
+
+          const { nodes: layoutedNodes, edges: layoutedEdges } =
+            getLayoutedElements(aiNodes, aiEdges);
+
+          setNodes(layoutedNodes as any);
+          setEdges(layoutedEdges);
+
+          requestAnimationFrame(() => {
+            flow?.fitView({
+              padding: 0.2,
+              duration: 500,
+            });
+          });
+
+          setShowAI(false);
+          setPrompt("");
+        },
+        onError: (error: any) => {
+          console.error(error);
+        },
+      },
+    );
+  };
   useEffect(() => {
     setCurrentDiagramID(diagramID);
   }, [diagramID, setCurrentDiagramID]);
@@ -1095,20 +1182,22 @@ export function DiagramEditorPage() {
     );
 
     setEdges(
-      canvasQuery.data.edges.map((edge): FlowEdge => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
-        type: edge.type ?? "smoothstep",
-        label: edge.label,
-        data: edge.data,
-        style: edge.style ?? {
-          stroke: "#67e8f9",
-          strokeWidth: 2,
-        },
-      })),
+      canvasQuery.data.edges.map(
+        (edge): FlowEdge => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
+          type: edge.type ?? "smoothstep",
+          label: edge.label,
+          data: edge.data,
+          style: edge.style ?? {
+            stroke: "#67e8f9",
+            strokeWidth: 2,
+          },
+        }),
+      ),
     );
 
     setDirty(false);
@@ -1229,6 +1318,15 @@ export function DiagramEditorPage() {
               <Button
                 size="sm"
                 variant="outline"
+                className="border-white/10 bg-slate-800 text-slate-100 hover:bg-slate-700 ml-3"
+                onClick={() => setShowAI(true)}
+              >
+                <Bot className="mr-2 h-4 w-4" />
+                AI
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
                 className="border-white/10 bg-slate-800 text-slate-100 hover:bg-slate-700"
                 onClick={() => setShowVersions(true)}
               >
@@ -1307,6 +1405,37 @@ export function DiagramEditorPage() {
                 {saveCanvas.isPending ? "Saving..." : "Save"}
               </Button>
 
+              {showAI && (
+                <div
+                  className="absolute right-0 top-14 z-40 w-96 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h2 className="mb-3 text-sm font-semibold text-white">
+                    Generate Diagram
+                  </h2>
+
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    rows={5}
+                    placeholder="Describe your ER diagram..."
+                    className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-white outline-none"
+                  />
+
+                  <div className="mt-4 flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowAI(false)}>
+                      Cancel
+                    </Button>
+
+                    <Button
+                      disabled={loadingAI}
+                      onClick={handleGenerateDiagram}
+                    >
+                      {loadingAI ? "Generating..." : "Generate"}
+                    </Button>
+                  </div>
+                </div>
+              )}
               {showBgPanel && (
                 <div
                   className="absolute right-0 top-14 z-40 w-72 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur"
@@ -1497,7 +1626,6 @@ export function DiagramEditorPage() {
                 },
               });
             }}
-            
             className="h-full w-full"
             style={{
               backgroundColor: canvasBgColor,

@@ -8,9 +8,10 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-     "dev:test": "vite --mode test"
+    "dev:test": "vite --mode test"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.0.0",
     "@radix-ui/react-dialog": "latest",
     "@radix-ui/react-label": "latest",
     "@radix-ui/react-slot": "latest",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "@tailwindcss/postcss": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
@@ -43,7 +45,6 @@
     "tailwindcss": "latest",
     "typescript": "latest",
     "typescript-eslint": "latest",
-    "vite": "latest",
-    "@tailwindcss/postcss": "latest"
+    "vite": "latest"
   }
 }

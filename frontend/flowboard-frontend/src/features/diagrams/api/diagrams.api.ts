@@ -33,6 +33,14 @@ export async function restoreVersion(diagramID: number, versionID: number): Prom
   return res.data.data;
 }
 
+export async function llm(userMessage: string, diagram: number): Promise<any> {
+  const res = await http.post("/api/llm", {
+    userMessage,
+    diagram,
+  });
+
+  return res.data.data;
+}
 
 
 export async function getSharedWithMeApi(): Promise<SharedDiagram[]> {

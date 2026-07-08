@@ -6,9 +6,11 @@ import (
 	projectHandler "flowBoard/draw/internal/handlers/project"
 	userHandler "flowBoard/draw/internal/handlers/users"
 
+	llmHandler "flowBoard/draw/internal/handlers/llm"
 	notificationHandler "flowBoard/draw/internal/handlers/notification"
 	notificationStreamHandler "flowBoard/draw/internal/handlers/notification-stream"
 	realTimeHandlers "flowBoard/draw/internal/handlers/realtime"
+
 	middleware "flowBoard/draw/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +22,7 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 	realtimeHandler realTimeHandlers.RealtimeHandler,
 	notificationHandler notificationHandler.NotificationHandler,
 	notificationStreamHandler notificationStreamHandler.NotificationStreamHandler,
+	llmHandler llmHandler.LLMHandlers,
 
 ) {
 	api := router.Group("/api")
@@ -80,6 +83,12 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 
 		// Realtime notification SSE stream
 		protected.GET("/notifications/stream", notificationStreamHandler.Stream)
+
+		//llm
+		llm := protected.Group("")
+		{
+			llm.POST("/llm", llmHandler.ModelInvoke)
+		}
 	}
 
 }
