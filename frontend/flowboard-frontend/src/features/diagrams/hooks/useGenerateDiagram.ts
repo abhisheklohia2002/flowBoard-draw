@@ -3,9 +3,9 @@ import { llm } from "../api/diagrams.api";
 import { queryClient } from "@/lib/queryClient";
 import { diagramKeys } from "./useDiagrams";
 import { toast } from "sonner";
+import { useAppStore } from "@/store/appStore";
 
-
-export const useGenerateDiagram = (diagramID:number) => {
+export const useGenerateDiagram = (diagramID:number,userId:number) => {
   return useMutation({
     mutationFn: ({
       userMessage,
@@ -13,11 +13,14 @@ export const useGenerateDiagram = (diagramID:number) => {
     }: {
       userMessage: string;
       diagram: number;
-    }) => llm(userMessage, diagram),
-     onSuccess: async () => {
+    }) => llm(userMessage, diagram,userId),
+     onSuccess: async (response) => {
+     
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: diagramKeys.canvas(diagramID) }),
         queryClient.invalidateQueries({ queryKey: diagramKeys.versions(diagramID) }),
+
       ]);
       toast.success("Canvas saved");
     },

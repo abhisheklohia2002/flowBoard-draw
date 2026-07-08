@@ -9,7 +9,6 @@ import {
   UserCircle,
   Workflow,
 } from "lucide-react";
-import { useAppStore } from "@/store/appStore";
 import { Button } from "@/components/ui/button";
 import { useLogout } from "@/features/auth/hooks/useAuth";
 import { getMe } from "@/features/auth/api/auth.api";
@@ -17,9 +16,10 @@ import { useEffect, useState } from "react";
 import { User } from "@/types/auth";
 import { useNotificationStream } from "@/features/notification/hooks/useNotificationStream";
 import { NotificationBell } from "../NotificationBell/NotificationBell";
+import { useAppStore } from "@/store/appStore";
 
 export function AppLayout() {
-  const { sidebarCollapsed, toggleSidebar } = useAppStore();
+  const { sidebarCollapsed, toggleSidebar,setUser } = useAppStore();
   const logout = useLogout();
 
   useNotificationStream();
@@ -32,6 +32,7 @@ export function AppLayout() {
     const fetchMe = async () => {
       try {
         const user = await getMe();
+        setUser(user)
         setMe(user);
       } catch (error) {
         console.error("Failed to fetch user", error);

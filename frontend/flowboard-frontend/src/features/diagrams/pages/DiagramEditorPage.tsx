@@ -25,6 +25,8 @@ import {
 import {
   Bot,
   Clock,
+  Lock,
+  LockIcon,
   Palette,
   Save,
   Share2,
@@ -54,6 +56,7 @@ import { CollaborateDialog } from "@/features/collaboration/components/Collabora
 import { useDiagramRealtime } from "@/features/realtime/hook/useDiagramRealtime";
 import { getLayoutedElements } from "@/utils/dagre";
 import { useGenerateDiagram } from "../hooks/useGenerateDiagram";
+import { useAppStore } from "@/store/appStore";
 
 type ShapeNodeData = {
   label: string;
@@ -365,6 +368,9 @@ export function DiagramEditorPage() {
   const [activities, setActivities] = useState<
     Record<string, ActivityIndicator>
   >({});
+  const user = useAppStore((state) => state.user);
+  const { setUser } = useAppStore();
+
   const [showAI, setShowAI] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
@@ -1065,9 +1071,10 @@ export function DiagramEditorPage() {
     setDirty(true);
   }, [edges, nodes, sendMessage, setDirty]);
 
-  const generateDiagram = useGenerateDiagram(diagramID);
+  const generateDiagram = useGenerateDiagram(diagramID, user.id);
   const handleGenerateDiagram = () => {
     setLoadingAI(!loadingAI);
+    
     generateDiagram.mutate(
       {
         userMessage: prompt,
@@ -1076,8 +1083,9 @@ export function DiagramEditorPage() {
       {
         onSuccess: (response: any) => {
           setLoadingAI(false);
-          setShowAI(false)
-          setPrompt("")
+          setShowAI(false);
+          setPrompt("");
+          setUser(response?.user);
           const aiNodes: FlowNode[] = response.data.entities.map(
             (entity: any, index: number) => ({
               id: entity.id,
@@ -1134,7 +1142,7 @@ export function DiagramEditorPage() {
         },
         onError: (error: any) => {
           console.error(error);
-           setShowAI(false);
+          setShowAI(false);
           setLoadingAI(false);
           setPrompt("");
         },
@@ -1411,9 +1419,17 @@ export function DiagramEditorPage() {
                   className="absolute right-0 top-14 z-40 w-96 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <h2 className="mb-3 text-sm font-semibold text-white">
-                    Generate Diagram
-                  </h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm font-semibold text-white">
+                      Remaining AI generations:{" "}
+                      <span className="text-md font-bold">
+                        {user.aiTokenValidation}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold text-white">
+                      Generate Diagram
+                    </span>
+                  </div>
 
                   <textarea
                     value={prompt}
@@ -1424,14 +1440,16 @@ export function DiagramEditorPage() {
                   />
 
                   <div className="mt-4 flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setShowAI(false)}>
+                    <Button variant="ghost" onClick={() => setShowAI(false)}>
                       Cancel
                     </Button>
 
                     <Button
-                      disabled={loadingAI}
+                      variant={"outline"}
+                      disabled={loadingAI || user.aiTokenValidation <= 0 ||  prompt == "" }
                       onClick={handleGenerateDiagram}
                     >
+                      {user.aiTokenValidation == 0 ? <Lock size={15} /> : null}{" "}
                       {loadingAI ? "Generating..." : "Generate"}
                     </Button>
                   </div>

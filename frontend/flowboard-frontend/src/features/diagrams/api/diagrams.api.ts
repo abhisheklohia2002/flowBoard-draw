@@ -2,6 +2,8 @@ import { http } from "@/lib/http";
 import type { APIResponse } from "@/types/api";
 import type { CanvasResponse, CreateDiagramRequest, Diagram, DiagramVersion, SaveCanvasRequest, SaveCanvasResponse } from "@/types/diagram";
 import { SharedDiagram } from "../types/diagram.types";
+import { useAppStore } from "@/store/appStore";
+
 
 export async function createDiagram(projectID: number, payload: CreateDiagramRequest): Promise<Diagram> {
   const res = await http.post<APIResponse<Diagram>>(`/api/projects/${projectID}/diagrams`, payload);
@@ -33,13 +35,13 @@ export async function restoreVersion(diagramID: number, versionID: number): Prom
   return res.data.data;
 }
 
-export async function llm(userMessage: string, diagram: number): Promise<any> {
-  const res = await http.post("/api/llm", {
+export async function llm(userMessage: string, diagram: number,userId:number): Promise<any> {
+  const res = await http.post(`/api/llm/${userId}`, {
     userMessage,
     diagram,
   });
 
-  return res.data.data;
+  return res.data;
 }
 
 
