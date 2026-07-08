@@ -25,6 +25,7 @@ type Config struct {
 	DB_URL          string
 	REDIS_URL       string
 	FRONTEND_URL    string
+	LLM_URL         string
 }
 
 func LoadEnv() Config {
@@ -72,5 +73,6 @@ func LoadEnv() Config {
 		DB_URL:          helpers.GetEnv("DB_URL", "DB_URL"),
 		REDIS_URL:       helpers.GetEnv("REDIS_URL", "REDIS_URL"),
 		FRONTEND_URL:    helpers.GetEnv("FRONTEND_URL", "FRONTEND_URL"),
+		LLM_URL:         helpers.GetEnv("LLM_URL", "LLM_URL"),
 	}
 }

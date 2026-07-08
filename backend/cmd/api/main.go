@@ -72,7 +72,8 @@ func main() {
 	allowedOrigins := []string{"http://localhost:5173"}
 
 	if frontendURL := cfg.FRONTEND_URL; frontendURL != "" {
-		allowedOrigins = append(allowedOrigins, frontendURL)
+		llmUrl := cfg.LLM_URL
+		allowedOrigins = append(allowedOrigins, frontendURL, llmUrl)
 	}
 	log.Printf("Allowed CORS origins: %v\n", allowedOrigins)
 	r.Use(cors.New(cors.Config{
@@ -176,7 +177,7 @@ func main() {
 	llmRepo := llmRepo.NewLLMRepository(db)
 	llmService := llmServices.NewLLMService(llmRepo)
 	llmHandler := llmHandler.NewLLMHandlers(llmService)
-	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler, *realtimeHandler, *notificationHandler, *notificationStreamHandler,llmHandler)
+	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler, *realtimeHandler, *notificationHandler, *notificationStreamHandler, llmHandler)
 
 	r.Run(":" + "8080")
 	if err := r.Run(":" + port); err != nil {
