@@ -1096,8 +1096,6 @@ export function DiagramEditorPage() {
                 bg: "#0f172a",
                 border: "#22d3ee",
                 text: "#ffffff",
-
-                // keep all attributes if your ShapeNode renders them
                 attributes: entity.attributes,
               },
             }),
@@ -1109,7 +1107,7 @@ export function DiagramEditorPage() {
               source: relationship.from,
               target: relationship.to,
               type: "smoothstep",
-              label: relationship.label,
+              label: relationship.type,
               animated: false,
               style: {
                 stroke: "#67e8f9",
