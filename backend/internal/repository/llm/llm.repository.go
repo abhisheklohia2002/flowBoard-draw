@@ -53,7 +53,7 @@ func (r *LLMRepositoryImpl) SaveDiagram(
 		spacingY = 220.0
 	)
 
-	for _, entity := range response.Entities {
+	for i, entity := range response.Entities {
 
 		data, err := json.Marshal(gin.H{
 			"attributes": entity.Attributes,
@@ -77,8 +77,8 @@ func (r *LLMRepositoryImpl) SaveDiagram(
 			Type:  "entity",
 			Label: entity.Name,
 
-			PositionX: 0,
-			PositionY: 0,
+			PositionX: float64(i%3) * spacingX,
+			PositionY: float64(i/3) * spacingY,
 
 			Width:  240,
 			Height: 180,
