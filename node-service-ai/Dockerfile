@@ -8,8 +8,6 @@ RUN bun install
 
 COPY . .
 
-RUN bun build src/server.ts --outfile server
-
 EXPOSE 3000
 
-CMD ["./server"]
+CMD ["bun", "run", "src/server.ts"]
