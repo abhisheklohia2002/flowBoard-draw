@@ -3,6 +3,7 @@ package llm
 import (
 	"encoding/json"
 	dto "flowBoard/draw/internal/DTO"
+	"flowBoard/draw/internal/config"
 	"flowBoard/draw/internal/helpers"
 	llmService "flowBoard/draw/internal/services/llm"
 	"net/http"
@@ -25,6 +26,7 @@ func NewLLMHandlers(llmService llmService.LLMService) LLMHandlers {
 }
 
 func (h *LLMHandlersImpl) ModelInvoke(c *gin.Context) {
+	cfg := config.LoadEnv()
 
 	var req dto.LLMDiagram
 
@@ -37,7 +39,7 @@ func (h *LLMHandlersImpl) ModelInvoke(c *gin.Context) {
 	}
 
 	body, err := helpers.Post(
-		"http://localhost:3000/llm-diagram",
+		cfg.LLM_URL+"/llm-diagram",
 		req,
 	)
 
