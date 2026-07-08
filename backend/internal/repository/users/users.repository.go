@@ -13,6 +13,7 @@ type UserRepository interface {
 	FindByEmail(email string) (*models.User, error)
 	FindByID(id uint) (*models.User, error)
 	SearchUsers(query string, excludeUserID uint) ([]models.User, error)
+	UpdateUserById(id uint) (*models.User, error)
 }
 
 type UserRepositoryImpl struct {
@@ -75,4 +76,22 @@ func (r *UserRepositoryImpl) SearchUsers(query string, excludeUserID uint) ([]mo
 		Error
 
 	return users, err
+}
+
+func (r *UserRepositoryImpl) UpdateUserById(userId uint) (*models.User, error) {
+	var user models.User
+
+	if err := r.db.First(&user, userId).Error; err != nil {
+		return nil, err
+	}
+
+	if user.AIToken > 0 {
+		user.AIToken--
+	}
+
+	if err := r.db.Save(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

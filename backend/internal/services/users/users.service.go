@@ -22,6 +22,7 @@ type UserService interface {
 	Self(userID uint) (*dto.AuthUserResponse, error)
 	Logout(refreshToken string) error
 	Refresh(refreshToken string) (*dto.AuthResponse, error)
+	UpdateUser(userID uint) (*dto.AuthUserResponse, error)
 }
 
 type UserServiceImpl struct {
@@ -65,6 +66,7 @@ func (s *UserServiceImpl) Register(req dto.RegisterUserRequest) (*dto.RegisterUs
 		Email:        email,
 		PasswordHash: string(hashedPassword),
 		Role:         "customer",
+		AIToken:      3,
 	}
 
 	savedUser, err := s.repo.Create(&user)
@@ -94,10 +96,11 @@ func (s *UserServiceImpl) Register(req dto.RegisterUserRequest) (*dto.RegisterUs
 
 	response := &dto.RegisterUserResponse{
 		User: dto.AuthUserResponse{
-			ID:       savedUser.ID,
-			FullName: savedUser.FullName,
-			Email:    savedUser.Email,
-			Role:     savedUser.Role,
+			ID:                savedUser.ID,
+			FullName:          savedUser.FullName,
+			Email:             savedUser.Email,
+			Role:              savedUser.Role,
+			AiTokenValidation: savedUser.AIToken,
 		},
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -161,10 +164,11 @@ func (s *UserServiceImpl) Self(userID uint) (*dto.AuthUserResponse, error) {
 	}
 
 	return &dto.AuthUserResponse{
-		ID:       user.ID,
-		FullName: user.FullName,
-		Email:    user.Email,
-		Role:     user.Role,
+		ID:                user.ID,
+		FullName:          user.FullName,
+		Email:             user.Email,
+		Role:              user.Role,
+		AiTokenValidation: user.AIToken,
 	}, nil
 }
 
@@ -245,5 +249,19 @@ func (s *UserServiceImpl) Refresh(refreshToken string) (*dto.AuthResponse, error
 		},
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
+	}, nil
+}
+
+func (s *UserServiceImpl) UpdateUser(userID uint) (*dto.AuthUserResponse, error) {
+	user, err := s.repo.UpdateUserById(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find user: %w", err)
+	}
+	return &dto.AuthUserResponse{
+		ID:                user.ID,
+		FullName:          user.FullName,
+		Email:             user.Email,
+		Role:              user.Role,
+		AiTokenValidation: user.AIToken,
 	}, nil
 }

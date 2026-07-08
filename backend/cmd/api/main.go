@@ -176,7 +176,7 @@ func main() {
 	//LLM setup
 	llmRepo := llmRepo.NewLLMRepository(db)
 	llmService := llmServices.NewLLMService(llmRepo)
-	llmHandler := llmHandler.NewLLMHandlers(llmService)
+	llmHandler := llmHandler.NewLLMHandlers(llmService, userService)
 	routes.Routes(r, userHandler, projectHandler, diagramHandler, collaborationHandler, *realtimeHandler, *notificationHandler, *notificationStreamHandler, llmHandler)
 
 	r.Run(":" + "8080")

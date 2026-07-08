@@ -3,12 +3,12 @@ package models
 import "time"
 
 type User struct {
-	ID           uint   `json:"id" gorm:"primaryKey"`
-	FullName     string `json:"full_name" gorm:"not null"`
-	Email        string `json:"email" gorm:"uniqueIndex;not null"`
-	Role         string `json:"role" gorm:"not null;default:user"`
-	PasswordHash string `json:"-" gorm:"not null"`
-
+	ID            uint           `json:"id" gorm:"primaryKey"`
+	FullName      string         `json:"full_name" gorm:"not null"`
+	Email         string         `json:"email" gorm:"uniqueIndex;not null"`
+	Role          string         `json:"role" gorm:"not null;default:user"`
+	PasswordHash  string         `json:"-" gorm:"not null"`
+	AIToken       int            `json:"aiToken" gorm:"not null"`
 	Projects      []Project      `json:"projects,omitempty" gorm:"foreignKey:UserID"`
 	RefreshTokens []RefreshToken `json:"refresh_tokens,omitempty" gorm:"foreignKey:UserID"`
 

@@ -87,7 +87,7 @@ func Routes(router *gin.Engine, userhandler userHandler.UserHandler, projectHand
 		//llm
 		llm := protected.Group("")
 		{
-			llm.POST("/llm", llmHandler.ModelInvoke)
+			llm.POST("/llm/:userId", llmHandler.ModelInvoke)
 		}
 	}
 

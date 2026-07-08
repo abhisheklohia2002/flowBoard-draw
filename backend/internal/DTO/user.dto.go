@@ -13,10 +13,11 @@ type UpdateUserDto struct {
 }
 
 type AuthUserResponse struct {
-	ID       uint   `json:"id"`
-	FullName string `json:"full_name"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	ID                uint   `json:"id"`
+	FullName          string `json:"full_name"`
+	Email             string `json:"email"`
+	Role              string `json:"role"`
+	AiTokenValidation int    `json:"aiTokenValidation"`
 }
 
 type RegisterUserResponse struct {
