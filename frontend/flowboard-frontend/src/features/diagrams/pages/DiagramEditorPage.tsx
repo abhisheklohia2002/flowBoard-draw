@@ -1134,6 +1134,9 @@ export function DiagramEditorPage() {
         },
         onError: (error: any) => {
           console.error(error);
+           setShowAI(false);
+          setLoadingAI(false);
+          setPrompt("");
         },
       },
     );
