@@ -3,13 +3,14 @@ package helpers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 )
 
 func Post(url string, body any) ([]byte, error) {
-
 	client := &http.Client{
 		Timeout: 60 * time.Second,
 	}
@@ -34,8 +35,19 @@ func Post(url string, body any) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
 
-	return io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("Status:", resp.Status)
+	log.Println("Response:", string(respBody))
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("llm returned status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	return respBody, nil
 }
