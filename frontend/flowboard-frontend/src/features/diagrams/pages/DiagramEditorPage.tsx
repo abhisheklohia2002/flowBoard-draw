@@ -1420,7 +1420,7 @@ export function DiagramEditorPage() {
 
               {showAI && (
                 <div
-                  className="absolute right-0 top-14 z-40 w-96 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur"
+                  className="absolute right-42 top-15 z-40 w-96 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex justify-between items-center mb-4">
