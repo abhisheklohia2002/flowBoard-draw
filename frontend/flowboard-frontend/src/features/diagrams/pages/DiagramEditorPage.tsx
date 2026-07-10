@@ -1583,6 +1583,7 @@ export function DiagramEditorPage() {
             onMove={(_, viewport) => {
               setZoom(Math.round(viewport.zoom * 100));
             }}
+            proOptions={{ hideAttribution: true }}
             autoPanOnNodeFocus={true}
             onPaneClick={() => {
               setSelectedElementID(null);
