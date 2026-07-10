@@ -66,7 +66,7 @@ func (s *UserServiceImpl) Register(req dto.RegisterUserRequest) (*dto.RegisterUs
 		Email:        email,
 		PasswordHash: string(hashedPassword),
 		Role:         "customer",
-		AIToken:      3,
+		AIToken:      2,
 	}
 
 	savedUser, err := s.repo.Create(&user)
