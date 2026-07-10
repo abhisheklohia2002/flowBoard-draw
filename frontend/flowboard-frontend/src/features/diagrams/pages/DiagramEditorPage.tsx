@@ -27,8 +27,11 @@ import {
   Clock,
   Lock,
   LockIcon,
+  Minus,
   Palette,
+  Plus,
   Save,
+  ScanSearch,
   Share2,
   Trash2,
   Workflow,
@@ -368,6 +371,7 @@ export function DiagramEditorPage() {
   const [activities, setActivities] = useState<
     Record<string, ActivityIndicator>
   >({});
+  const [zoom, setZoom] = useState(100);
   const user = useAppStore((state) => state.user);
   const { setUser } = useAppStore();
 
@@ -1074,7 +1078,7 @@ export function DiagramEditorPage() {
   const generateDiagram = useGenerateDiagram(diagramID, user.id);
   const handleGenerateDiagram = () => {
     setLoadingAI(!loadingAI);
-    
+
     generateDiagram.mutate(
       {
         userMessage: prompt,
@@ -1446,7 +1450,9 @@ export function DiagramEditorPage() {
 
                     <Button
                       variant={"outline"}
-                      disabled={loadingAI || user.aiTokenValidation <= 0 ||  prompt == "" }
+                      disabled={
+                        loadingAI || user.aiTokenValidation <= 0 || prompt == ""
+                      }
                       onClick={handleGenerateDiagram}
                     >
                       {user.aiTokenValidation == 0 ? <Lock size={15} /> : null}{" "}
@@ -1574,6 +1580,9 @@ export function DiagramEditorPage() {
             onConnect={onConnect}
             onInit={setFlow}
             fitView
+            onMove={(_, viewport) => {
+              setZoom(Math.round(viewport.zoom * 100));
+            }}
             autoPanOnNodeFocus={true}
             onPaneClick={() => {
               setSelectedElementID(null);
@@ -1652,20 +1661,45 @@ export function DiagramEditorPage() {
           >
             <Background color={gridColor} gap={24} />
 
-            <Controls
-              position="top-right"
-              className="!border-white/10 !bg-slate-900/90 !shadow-xl"
-              style={{
-                top: 96,
-                right: 16,
-                color: "slategrey",
-                backgroundColor: "ButtonShadow",
-              }}
-            />
-
             <ActivityLabels nodes={nodes} activities={activities} />
           </ReactFlow>
+          <div className="absolute right-4 top-24 z-30 flex items-center overflow-hidden rounded-xl border border-white/10 bg-slate-900/90 shadow-xl">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => flow?.zoomOut({ duration: 200 })}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
 
+            <div className="min-w-[70px] border-x border-white/10 px-3 py-2 text-center text-sm font-semibold text-white">
+              {zoom}%
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => flow?.zoomIn({ duration: 200 })}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+
+            <div className="h-8 w-px bg-white/10" />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Fit Diagram"
+              onClick={() =>
+                flow?.fitView({
+                  padding: 0.2,
+                  duration: 500,
+                })
+              }
+            >
+              <ScanSearch className="h-4 w-4" />
+            </Button>
+          </div>
           {showVersions && (
             <div className="absolute bottom-4 right-4 top-24 z-30 w-[360px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur">
               <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
